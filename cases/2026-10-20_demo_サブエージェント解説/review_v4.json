@@ -1,0 +1,44 @@
+{
+  "task_id": "2026-10-20_demo",
+  "revision_round": 4,
+  "verdict": "ESCALATE",
+  "issues": [
+    {
+      "location": "5章「bypassPermissions・acceptEdits・auto mode は Manual 以外のモードです[C33]。メイン会話がこれらなら、サブエージェントもそのモードで動き、定義の指定は無視されます[C27]。」と、要確認事項「[要調査] 各権限モード（Manual・bypassPermissions・acceptEdits・auto mode）の具体的な働き」",
+      "problem": "lessons 3（モード名まで含めて、初出の専門用語をすべて1文で説明する。例として bypassPermissions と acceptEdits が挙がっている）と完了条件3を、形の上でしか満たしていない。「Manual 以外のモード」は、何が違うのかを言っていない。そのため review_v3 の指摘2で挙げた点がまだ残っている。5章で最も危ない点は『メイン会話が bypassPermissions なら、サブエージェントもそのモードで動き、定義の指定は無視される』ことだが、非エンジニアの読み手にはその意味が分からない。また、この情報は公式で確かめられるので、[要調査] に回すのは正しい分け方ではない。2026-10-20 に WebFetch で確認した原文は次のとおり。permission-modes ページのモード一覧表の『What runs without asking』列で、bypassPermissions は「Everything」、acceptEdits は「Reads, file edits, and common filesystem commands (`mkdir`, `touch`, `mv`, `cp`, etc.)」、auto は「Everything, with background safety checks」、Manual (`default`) は「Reads only」。cli-reference ページにも「--dangerously-skip-permissions: Skip permission prompts. Equivalent to `--permission-mode bypassPermissions`.」とある。",
+      "check": "A",
+      "severity": "medium",
+      "suggestion": "Researcher：https://code.claude.com/docs/en/permission-modes のモード一覧表から、上の4行（Manual・acceptEdits・auto・bypassPermissions）を claim にする（例：C45〜C48）。Builder：「Manual 以外のモードです[C33]」の文を、次のような1文にする。「bypassPermissions は確認なしで何でも実行し、acceptEdits はファイル編集も確認なしで行い、auto mode は安全確認を裏で行いながら何でも実行するモードです[Cxx]。」字数が足りなければ、権限モードの行の『Manual モードでは〜』を短くする。いまは 2,914字で、残りは約86字。要確認事項の該当する [要調査] は消し、出典一覧に permission-modes の行を足す。"
+    },
+    {
+      "location": "3.2 のコードブロック「description: （前略）最初の段階で使う。」",
+      "problem": "実物の planner.md の description は「…agent-team ワークフローの最初の段階で使う。調査や本文作成はしない。」で、続きがある。抜粋では後ろの文を省いているのに、そのことを示していない。実物の引用（完了条件4）として、元の文がここで終わっているように読めてしまう。",
+      "check": "A",
+      "severity": "low",
+      "suggestion": "「（前略）最初の段階で使う。（後略）」にするか、「調査や本文作成はしない。」まで引用する。"
+    },
+    {
+      "location": "3.2 **tools**「これはメイン会話のツールから一部を除いたもので、裏で動く場合（既定）はさらに減ります[C6]。」と、research_pack の C6",
+      "problem": "本文は原文と矛盾しない。2026-10-20 に WebFetch で、Available tools 節の『narrowed by two filters ... background, which is the default』を確認した。ただし C6 の quote は tools 行の「Inherits every tool available to subagents if omitted.」だけになった。本文の後半（一部を除く、裏で動くとさらに減る）を支える原文は note にしかなく、quote では確かめられない。また同じ節には『On macOS, Linux, and WSL, a subagent can also receive the Glob and Grep tools when the main conversation doesn't have them』とある。このため、Linux 環境では『メイン会話のツールから一部を除いたもの』が厳密には当てはまらない。",
+      "check": "B",
+      "severity": "low",
+      "suggestion": "Researcher：C6 の quote に「narrowed by two filters」を足して、2つの文を並べる。本文はこのままでよい。字数に余裕があれば「（macOS・Linux・WSL では Glob・Grep が加わることがあります[C6]）」を足す。"
+    },
+    {
+      "location": "6章「`--add-dir`（フォルダを追加する指定）で加えたフォルダのエージェント」と、要確認事項「[要調査] `--add-dir` の詳しい働き」",
+      "problem": "本文の言い方は C19 の範囲に収まっていて、誤りではない。ただし cli-reference は C44 の出典として取得済みで、同じ表の --add-dir 行は「Add additional working directories for Claude to read and edit files.」と書いている（2026-10-20 に WebFetch で確認）。公式で確かめられるので、[要調査] には当たらない。",
+      "check": "C",
+      "severity": "low",
+      "suggestion": "Researcher：cli-reference の --add-dir 行を claim にする。Builder：「`--add-dir`（作業フォルダを追加する起動時の指定[Cxx]）」とし、要確認事項の該当項目を消す。"
+    },
+    {
+      "location": "5章「権限ルールは deny（拒否）→ ask（確認）→ allow（許可）の順に見て、最初の一致で決まります[C23]。」",
+      "problem": "出典IDを入れると約60字で、目安の60字に届く。読みにくさは小さい。",
+      "check": "F",
+      "severity": "low",
+      "suggestion": "直さなくてもよい。直すなら「権限ルールは deny（拒否）→ ask（確認）→ allow（許可）の順に見ます。最初に一致したもので決まります[C23]。」と2文に分ける。"
+    }
+  ],
+  "spot_checked_claims": ["C6", "C19", "C25", "C44", "C4", "C32"],
+  "escalation_reason": "判定ルールに従い、修正が必要なので ESCALATE とする。revision_round 4 で、人間の許可により修正回数の上限は解除されている。主な理由は A の medium が1件あること。5章で権限モード名を『Manual 以外のモード』としか説明しておらず、lessons 3 と review_v3 の指摘2が実質的に解消していない。公式（permission-modes の一覧表）で確かめられる内容を [要調査] に回している。high の指摘は0件。E（安全）と D（範囲）に当たる記述はない。照合の結果：C6 と C44 を、2026-10-20 に WebFetch で公式ページと照らし合わせ、どちらも quote が原文と一致した。C6 は sub-agents ページの tools 行『Inherits every tool available to subagents if omitted.』、C44 は cli-reference ページの『Disable all skills and commands for this session』。C6 の conflict: false は正しい。tools 行と Available tools 節は両立する。C19 と C25 も原文と一致した。C4・C32 は sub-agents ページの frontmatter 表で一致した。実物ファイルも照合した。planner.md の frontmatter と SKILL.md の description、4体の tools（いずれも Glob・Grep あり、Bash なし）は、本文と要確認事項の記述と一致した。ただし planner の description の抜粋に（後略）が抜けている（low）。review_v3 の指摘への対応は次のとおり。1・3・5・6・7・8・9・10・11 は解消した。4 は --disable-slash-commands について解消し、--add-dir は C19 の範囲にとどめた（low が残る）。2 は、メイン会話・パターン・permissionMode・Manual モードは解消したが、bypassPermissions・acceptEdits・auto mode の説明が実質的にない（medium）。lessons の確認結果は次のとおり。1（限定語を落とさない）は、C25（設定ファイルの Bash deny ルール）、C40・C41（macOS・Linux・WSL）、C1・C14 で守られている。2（conflict の扱い）は、全 claim が conflict: false で守られている。3 は未達（上記）。4 は守られている（下記）。Builder の判断依頼への回答：出典一覧の形式で『メモだけで出典をたどれる』と言える。共通の先頭『https://code.claude.com/docs/en/』にページ名を付ければ、完全な URL が1つに決まる。本文で使っている ID（C1〜C7・C9〜C19・C21〜C23・C25〜C27・C29〜C42・C44）は、すべて一覧のどれか1行に入っている。一覧にない ID や、ページの割り当ての誤りもなかった。lessons 4 と review_v3 の指摘3は満たしている。完全な URL を書く形にすると 2,914字に約120字足して上限3,000字を超えるため、いまの形を保つことを勧める。人間に判断してほしいこと：(a) 権限モード名の説明（medium）を Researcher と Builder に直させるか、人間が直接直すか。(b) low の4件をこの機会に直すか。(c) 3.1 の『team の定義はプロジェクト単位』の前提（ホームが /root）を認めるか。(d) team の tools 指定がこの Linux 環境で動くかを動作確認するか。(e) 社内配布の可否と範囲。"
+}

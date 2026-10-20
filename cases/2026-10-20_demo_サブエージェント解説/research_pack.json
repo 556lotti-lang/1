@@ -19,7 +19,7 @@
     {
       "question": "サブエージェント定義の tools フィールドを省略した場合と指定した場合で、使えるツールはどう変わるか",
       "claims": [
-        {"id": "C6", "claim": "tools を省略すると、サブエージェントはメイン会話で利用可能なツールから一部を除いたものを受け継ぐ。バックグラウンドで動く場合（既定）は組み込みツールがさらに減る。", "source": "https://code.claude.com/docs/en/sub-agents", "quote": "narrowed by two filters", "retrieved_at": "2026-10-20", "confidence": "high", "conflict": true, "stale": false, "note": "修正前の claim（v2 の C6）: 「tools を省略すると、サブエージェントはメイン会話で利用可能なツールをすべて継承する。」 修正前の quote: 「Inherits every tool available」。修正理由: 同じページの Available tools 節は「narrowed by two filters」と書いており、Frontmatter reference の tools 行「Inherits every tool available to subagents if omitted.」と食い違って読めるため、両方を残し conflict: true とした。根拠は 2 か所（Frontmatter reference の tools 行／Control subagent capabilities > Available tools 節の段落）。"},
+        {"id": "C6", "claim": "tools を省略すると、サブエージェントに使えるツールをすべて受け継ぐ（メイン会話で使えるツールから2つのフィルタで一部が除かれ、既定のバックグラウンドで動く場合は組み込みツールがさらに減る）。", "source": "https://code.claude.com/docs/en/sub-agents", "quote": "Inherits every tool available to subagents if omitted.", "retrieved_at": "2026-10-20", "confidence": "high", "conflict": false, "stale": false, "note": "修正理由（review_v3 指摘1の対応）：修正前は conflict: true、claim は「メイン会話で利用可能なツールから一部を除いたものを受け継ぐ」、quote は「narrowed by two filters」だった。同じページの2か所は両立する。（a）Frontmatter reference の tools 行「Inherits every tool available to subagents if omitted.」は、サブエージェントに使えるツールの範囲を示す。（b）Control subagent capabilities > Available tools 節の導入文「Subagents inherit the built-in tools and MCP tools available in the main conversation, narrowed by two filters ... which is the default.」は、その範囲がメイン会話のツールを2つのフィルタで絞ったものだと説明する。食い違いではないので conflict: false とした。修正前の v2 の「メイン会話で利用可能なツールをすべて継承」は、to subagents を落とした誤りだった。両方の原文は 2026-10-20 に WebFetch で確認。"},
         {"id": "C7", "claim": "tools を指定すると、サブエージェントは列挙したツールだけを使える。書式はカンマ区切りの文字列または YAML リスト。", "source": "https://code.claude.com/docs/en/sub-agents", "quote": "as a comma-separated string", "retrieved_at": "2026-10-20", "confidence": "high", "conflict": false, "stale": false},
         {"id": "C8", "claim": "tools に指定したどの名前も有効なツールに解決されない場合、通常サブエージェントは起動に失敗する。", "source": "https://code.claude.com/docs/en/sub-agents", "quote": "usually fails to launch", "retrieved_at": "2026-10-20", "confidence": "medium", "conflict": false, "stale": false},
         {"id": "C9", "claim": "サブエージェントの運用ベストプラクティスとして、ツールへのアクセスは必要な権限だけに絞ることが推奨されている。", "source": "https://code.claude.com/docs/en/sub-agents", "quote": "grant only necessary permissions", "retrieved_at": "2026-10-20", "confidence": "high", "conflict": false, "stale": false}
@@ -107,6 +107,12 @@
         {"id": "C41", "claim": "macOS、Linux、WSL で Glob と Grep が使えるようになる条件の一つは、サブエージェントの tools に Glob または Grep を列挙し、Bash を列挙しない場合である（そのサブエージェントだけで使える）。", "source": "https://code.claude.com/docs/en/tools-reference", "quote": "leaves out `Bash`", "retrieved_at": "2026-10-20", "confidence": "high", "conflict": false, "stale": false, "note": "Glob tool behavior 節の箇条書き3つ目。他の条件（--tools／--allowedTools で指定、Bash を外す deny ルール等）も同じ節にある。raw 本文で確認。"},
         {"id": "C42", "claim": "ツール名は、権限ルール、サブエージェントの tools リスト、フックのマッチャーで使う正確な文字列である。", "source": "https://code.claude.com/docs/en/tools-reference", "quote": "The tool names are the exact strings you use in", "retrieved_at": "2026-10-20", "confidence": "high", "conflict": false, "stale": false, "note": "ページ冒頭の文。raw 本文で確認。"},
         {"id": "C43", "claim": "Read、Grep、Glob などのファイルアクセス系ツールは、作業ディレクトリと追加ディレクトリの外のパスについては、Permission required が No でも確認を求める。", "source": "https://code.claude.com/docs/en/tools-reference", "quote": "still prompt for paths outside the", "retrieved_at": "2026-10-20", "confidence": "high", "conflict": false, "stale": false, "note": "冒頭の Info 欄（auto mode の説明に続く部分）。raw 本文で確認。"}
+      ]
+    },
+    {
+      "question": "【追加調査 本文で使う場合に備えて】起動フラグ --disable-slash-commands は、スキルとコマンドのどちらを止めるか",
+      "claims": [
+        {"id": "C44", "claim": "起動フラグ --disable-slash-commands は、そのセッションのスキルとコマンドをすべて無効にする。", "source": "https://code.claude.com/docs/en/cli-reference", "quote": "Disable all skills and commands for this session", "retrieved_at": "2026-10-20", "confidence": "high", "conflict": false, "stale": false, "note": "CLI flags 表の --disable-slash-commands 行の Description 列。2026-10-20 に WebFetch で確認（要約ツール経由で返された原文の一文を引用）。C19 の再起動例外とは別の記述。"}
       ]
     }
   ],
