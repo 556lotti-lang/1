@@ -1,0 +1,79 @@
+{
+  "task_id": "2026-10-20_demo",
+  "revision_round": 1,
+  "verdict": "REVISE",
+  "issues": [
+    {
+      "location": "全体（「## 自己チェック」より前の本文）／「## 自己チェック」の分量欄",
+      "problem": "request.md 追記で本文3,000字以内と決まっているが、進行役の計測では空白を除いて3,486字（見出し・出典一覧込み）あり、約490字超えている。また自己チェックは目視の概算で「✅ 3,000字以内」と書いており、事実と異なる。",
+      "check": "A",
+      "severity": "high",
+      "suggestion": "約500字減らす。候補は次のとおり。(1) 2章の早見表から本文中で使わない項目（セッションなど）を削るか、説明を短くする。(2) 3.2 で同じ出典（[C5][C7]）を2文に分けている箇所を1文にまとめる。(3) 5章の C22〜C24 の6項目を3〜4項目にまとめる。(4) 7章の7項目を5項目程度に絞る（C3・C19/C21 は3章・6章の言い直し）。自己チェックの分量欄は、計測した字数を書くか「未計測」と書く。"
+    },
+    {
+      "location": "3.1 末尾「team の4ファイルは `~/.claude/agents/` にあり、ユーザー単位です」／4.1 末尾「agent-team は `~/.claude/skills/agent-team/` にあり、個人用です」",
+      "problem": "実物の置き場所は /home/user/.claude/agents/ と /home/user/.claude/skills/agent-team/ である。この環境では Claude Code の設定ディレクトリが /root/.claude（＝ホームは /root）で、作業ディレクトリが /home/user になっている。そのため、実物はユーザー単位（~/.claude/）ではなく、プロジェクト /home/user の .claude/agents/・.claude/skills/（プロジェクト単位）にあたる可能性が高い。区分を誤ると、同名時の優先順位（C3）の説明や、どこを直すかの判断を誤らせる。",
+      "check": "B",
+      "severity": "high",
+      "suggestion": "「~/.claude/…」の書き方をやめ、実際の絶対パス（/home/user/.claude/agents/ など）で書く。ユーザー単位かプロジェクト単位かは、実行環境のホームディレクトリと起動フォルダによって変わる。断定せずに「起動フォルダが /home/user ならプロジェクト単位、ホームが /home/user ならユーザー単位」と条件を付けて書くか、[要確認] にして人間に確かめてもらう。"
+    },
+    {
+      "location": "3.2 **tools**「省略すると、メイン会話のツールをすべて受け継ぎます[C6]」",
+      "problem": "公式の原文は「Inherits every tool available to subagents if omitted」で、Available tools 節には「inherit the built-in tools and MCP tools available in the main conversation, narrowed by two filters」（バックグラウンド実行では組み込みツールがさらに少なくなる）とある。「メイン会話のツールをすべて」は言い過ぎになっている。research_pack の C6 の要約も同じように言い過ぎている。",
+      "check": "B",
+      "severity": "medium",
+      "suggestion": "「省略すると、サブエージェントが使えるツールをすべて受け継ぎます（一部の条件では絞られます）[C6]」のように直す。Researcher に C6 の claim と quote（「Inherits every tool available to subagents」）を原文どおりに直してもらう。"
+    },
+    {
+      "location": "5章末尾「tools 欄と権限ルールの連動の仕様は [要調査] です。」",
+      "problem": "公式のサブエージェントページに、この関係を説明する記述がある。「Each inherits the parent conversation's permission rules」、permissionMode を省略するとメイン会話の権限モードを受け継ぐこと、設定の permissions.deny に Bash の deny ルールを書くと「applies to the main conversation and to subagents」であること。research_questions の8番目（tools 指定と権限設定の関係）に答えられていないため、運用担当者が安全に運用するための5章の説明が足りない。",
+      "check": "A",
+      "severity": "medium",
+      "suggestion": "Researcher に https://code.claude.com/docs/en/sub-agents の該当箇所（built-in subagents 節、Permission modes 節、disallowedTools の説明）を claim として追加してもらう。Builder はそれをもとに「tools は使える道具の範囲、権限ルールは実行時の承認。サブエージェントもメイン会話の権限ルールを受け継ぐ」と1〜2文で書く。字数の上限があるので、ほかを削って書く。"
+    },
+    {
+      "location": "4.2 **name**「公式な役割は [要調査] です。」",
+      "problem": "公式のスキルページで確認できる（「name: Command name shown in the / menu. Defaults to the directory name.」）。[要調査] のままだと、スキルの name を直すと呼び出し名が変わることを運用担当者が知らないまま作業することになる。",
+      "check": "A",
+      "severity": "medium",
+      "suggestion": "Researcher にスキルの name の claim を追加してもらい、「name は / メニューに出るコマンド名で、省略するとフォルダ名になります[Cxx]」と書く。"
+    },
+    {
+      "location": "3.2・5章・6章で使っている Grep、Bash、Edit、ディレクトリ、リポジトリ、inherit、エイリアス、`--add-dir` など",
+      "problem": "完了条件3は「本文中で初出の専門用語」に1文以内の説明を付けることを求めている。非エンジニア向けなのに、これらの語は早見表にも本文にも説明がない。",
+      "check": "A",
+      "severity": "medium",
+      "suggestion": "早見表に Bash（コマンドを実行するツール）、Grep（文字列を検索するツール）、ディレクトリ（フォルダ）、リポジトリ（プロジェクトのファイル一式）などを短く足す。足す分の字数は、使わない項目（セッションなど）を削って確保する。--add-dir などの起動オプションは「起動時の追加設定」とまとめて説明する。"
+    },
+    {
+      "location": "5章「作業ディレクトリ内の読み取りと Grep は承認不要です[C22]」ほか C22 の3項目",
+      "problem": "公式の表は「whether Manual mode asks before the action runs」という前提の表で、ほかの権限モードでは承認の要否が変わると書かれている。前提を書いていないので、いつでもそうであるかのように読める。",
+      "check": "B",
+      "severity": "low",
+      "suggestion": "最初の項目の前に「標準（Manual）モードの場合：」と前提を書く。"
+    },
+    {
+      "location": "2章 早見表の「サブエージェント」「委任」「ツール」「モデル」の説明",
+      "problem": "仕様にかかわる定義なのに出典IDがない（「スキル」「権限ルール」には付いている）。",
+      "check": "C",
+      "severity": "low",
+      "suggestion": "公式の記述に当たる claim があれば ID を付ける（例：委任の説明に C5）。一般的な言葉の説明にとどめるなら、仕様を言い切る表現（「特定の作業だけを任せる」など）を避ける。"
+    },
+    {
+      "location": "3.2「実物の planner は読む・探す・書くの4つだけで」",
+      "problem": "「読む・探す・書く」は3つの動作で「4つ」と数が合わず、読み手が混乱する（実物は Read, Glob, Grep, Write の4ツール）。",
+      "check": "F",
+      "severity": "low",
+      "suggestion": "「planner のツールは Read・Glob・Grep・Write の4つで、Edit はありません」と書く。"
+    },
+    {
+      "location": "ファイル冒頭「## 成果物」と、その下の「# Claude Code の…」",
+      "problem": "見出しの階層が逆（h2 の下に h1）で、outline の構成とも違う。",
+      "check": "F",
+      "severity": "low",
+      "suggestion": "成果物の本文と自己チェック・要確認事項の区切りは、見出しの階層を崩さない形にする（例：区切り線を使う）。"
+    }
+  ],
+  "spot_checked_claims": ["C3", "C4", "C5", "C6", "C7", "C8", "C9", "C10", "C11", "C12", "C15", "C16", "C17", "C18", "C19", "C20", "C21", "C22", "C23", "C24"],
+  "escalation_reason": ""
+}

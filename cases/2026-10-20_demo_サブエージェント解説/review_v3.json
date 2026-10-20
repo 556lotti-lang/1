@@ -1,0 +1,86 @@
+{
+  "task_id": "2026-10-20_demo",
+  "revision_round": 3,
+  "verdict": "ESCALATE",
+  "issues": [
+    {
+      "location": "3.2 **tools** の省略時の段落「省略時は公式に2通りの記述があります（要確認）[C6]。- 項目表：利用可能なツールをすべて受け継ぐ。- 本文：…」",
+      "problem": "原文の読み違いで、2通りの記述として並べている。sub-agents ページの Frontmatter reference の tools 行は「Inherits every tool available to subagents if omitted.」で、「サブエージェントに使えるツール（to subagents）」をすべて受け継ぐと書いている。Available tools 節は、その『サブエージェントに使えるツール』がメイン会話のツールを2つのフィルタで絞ったものだと説明している。2026-10-20 に WebFetch で両方の原文を確認した。2か所は同じ内容を書いており、食い違ってはいない。ところが本文の『項目表』の行は to subagents を訳していないので、『メイン会話のツールをすべて受け継ぐ』という v2 で直したはずの誤りが戻っている。さらに、公式で確認できる内容に『要確認』が付いていて、research_questions 3 の答えも定まっていない。research_pack の C6 も conflict: true のままで、項目表の行は quote ではなく note にしか書かれていない。",
+      "check": "B",
+      "severity": "high",
+      "suggestion": "Researcher：C6 を conflict: false に直し、quote に「Inherits every tool available to subagents if omitted.」を加える。Builder：2行の箇条書きと『（要確認）』を消し、次の1文にする。「省略すると、サブエージェントに使えるツールをすべて受け継ぎます。これはメイン会話のツールから一部を除いたもので、裏で動く場合（既定）はさらに減ります[C6]。」要確認事項にある C6 の項目も消す。"
+    },
+    {
+      "location": "5章「メイン会話が bypassPermissions・acceptEdits・auto mode なら…」「定義の permissionMode を省略すると…」「Manual モードでは…」、全体の「メイン会話」、2章の Glob・Grep の「パターン」",
+      "problem": "初出の専門用語に説明がない。bypassPermissions、acceptEdits、auto mode、Manual モード、permissionMode（frontmatter の項目名）、メイン会話、パターンがそれにあたる。自己チェックの完了条件3には『権限モード』の説明しか挙がっておらず、個々のモード名は抜けている。非エンジニアの読み手は、5章で最も危ない点、つまり『メイン会話が bypassPermissions ならサブエージェントもそのモードで動く』の意味を読み取れない。",
+      "check": "A",
+      "severity": "medium",
+      "suggestion": "各語に1文以内の説明を付ける。説明が仕様にあたる場合は出典を付ける（permission-modes ページから Researcher に claim を足してもらう）。例：「メイン会話（あなたが直接やり取りしている Claude）」「Manual モード（標準のモード）」「bypassPermissions（承認の確認をすべて省くモード）」「permissionMode（定義ファイルで権限モードを指定する項目）」「パターン（* などを使った名前の条件）」。字数が足りなければ、5章のモード名を『確認を省く一部のモード（bypassPermissions など）』のようにまとめる。"
+    },
+    {
+      "location": "## 出典一覧「code.claude.com/docs/en/ の sub-agents・skills・permissions・tools-reference」",
+      "problem": "字数を減らすために ID と URL の対応を削ったので、メモだけでは [C1] などの出典IDがどのページを指すか分からない。research_pack.json はメモと一緒に配られないので、読み手は出典を確かめられない。完了条件2（出典IDでの紐づけ）が、メモの中だけでは確かめられない状態になっている。",
+      "check": "A",
+      "severity": "medium",
+      "suggestion": "ページごとに ID の範囲と完全な URL を1行ずつ書く。例：「C1〜C12・C18・C19・C25〜C27・C32：https://code.claude.com/docs/en/sub-agents」「C13〜C17・C21・C29〜C31：https://code.claude.com/docs/en/skills」「C22〜C24・C33：https://code.claude.com/docs/en/permissions」「C34〜C42：https://code.claude.com/docs/en/tools-reference」。字数は進行役計測の2,689字に約120字足しても3,000字以内に収まる見込み。"
+    },
+    {
+      "location": "6章「起動時の追加設定 `--add-dir` で加えたフォルダ」「`/〇〇` を使えなくする起動設定 `--disable-slash-commands` の場合」",
+      "problem": "2つのフラグの説明は仕様にあたるが、出典IDがない。C19 はフラグの名前しか扱っていない。cli-reference の原文は `--disable-slash-commands` が「Disable all skills and commands for this session」、`--add-dir` が「Add additional working directories for Claude to read and edit files.」で、2026-10-20 に WebFetch で確認した。原文に照らすと、本文の説明はスキルも止まることを書いていない。",
+      "check": "C",
+      "severity": "low",
+      "suggestion": "Researcher に https://code.claude.com/docs/en/cli-reference の上の2行を claim にしてもらい、ID を付ける。説明は「そのセッションでスキルと `/〇〇` をすべて使えなくする起動設定」「作業フォルダを追加する起動設定」にする。"
+    },
+    {
+      "location": "5章「deny ルールはツールの使用を防ぎ[C24]、サブエージェントにも効きます[C25]。」",
+      "problem": "C25 の原文「The rule applies to the main conversation and to subagents.」は、直前にある Bash deny ルール（例：Bash(git push *)）について書いた文で、deny ルール全般の記述ではない。本文はそれを deny ルール全般に広げている。",
+      "check": "B",
+      "severity": "low",
+      "suggestion": "「設定の deny ルール（例：`Bash(git push *)`）はサブエージェントにも効きます[C25]。」のように、原文の例に合わせて範囲を限る。"
+    },
+    {
+      "location": "4.2 **name**「変えると呼び出し名も変わります[C29]。」",
+      "problem": "skills ページの『How a skill gets its command name』節には「The directory name also invokes the skill.」とあり、別のコマンドがその名前を使っている場合の例外も書かれている。本文の書き方では、name を変えると元の名前（フォルダ名）では呼べなくなるように読める。また C29 の quote に、この節の内容は入っていない。",
+      "check": "B",
+      "severity": "low",
+      "suggestion": "Researcher に、この節の「`name` sets the command that the `/` menu shows and that you type, unless another command already uses that name. The directory name also invokes the skill.」を claim にしてもらう。Builder は「変えると `/` メニューの名前が変わります。フォルダ名でも呼び出せます[Cxx]。」と書く。"
+    },
+    {
+      "location": "1章「このメモの目的と対象」",
+      "problem": "本文が出典IDの説明の1文だけで、見出しにある目的と対象が書かれていない（字数調整で削られた）。",
+      "check": "A",
+      "severity": "low",
+      "suggestion": "task_brief の goal と audience に沿って、1文を足す。例：「team のエージェントとスキルを安全に直せるよう、運用担当者向けに仕組みをまとめます。」"
+    },
+    {
+      "location": "## 要確認事項「[要調査] confidence: medium の claim（C11・C12・C25〜C27・C29〜C32）の原文再確認」",
+      "problem": "今回のレビューで、これらの claim はすべて WebFetch で原文と一致することを確認した（下の spot_checked_claims を参照）。[要調査] が残っていると、人間が最終承認するときに必要のない確認作業が増える。",
+      "check": "F",
+      "severity": "low",
+      "suggestion": "この項目を消すか、「review_v3 で原文と照合済み」に書き換える。Researcher は該当する claim の confidence を high にする。"
+    },
+    {
+      "location": "## 自己チェック の分量欄と完了条件2欄",
+      "problem": "分量欄に『空白除き2,800字以下・今回の指示』とあるが、request.md の上限は3,000字で、2,800字の指示はどの資料にも見当たらない。review_v2 の指摘9（分量欄を進行役の計測値と上限3,000字に直す）が直っていない。完了条件2欄の『C1〜C27・C29〜C42 に紐づけ』も、本文で使っていない C8・C20 を含んでおり、事実と合わない。",
+      "check": "F",
+      "severity": "low",
+      "suggestion": "分量欄を「進行役計測 2,689字（上限3,000字）」にする。完了条件2欄は、本文で実際に使っている ID の範囲に直す。"
+    },
+    {
+      "location": "3.2 **model** の文、2章 早見表の Read〜Bash の行、4.1 末尾と「### 4.2」の間",
+      "problem": "model の文は出典IDを入れると約70字あり、60字の目安を超えている。早見表の Read〜Bash の行は文末が『〜する』で終わり、ほかの行のです・ます調と揃っていない。4.1 の箇条書きと「### 4.2」の見出しの間に空行がない。",
+      "check": "F",
+      "severity": "low",
+      "suggestion": "model の文を「指定できるのは sonnet・opus・haiku・fable の略称、完全なモデルID、inherit です[C10]。inherit はメイン会話と同じモデルです[C11]。」のように2文に分ける。早見表の行の文末をです・ます調に揃える。見出しの前に空行を入れる。"
+    },
+    {
+      "location": "3.2 **tools**「Linux では Glob・Grep は既定で外れますが[C40]」",
+      "problem": "C40 の原文の対象は macOS、Linux、WSL の3つだが、本文は Linux だけに絞っている。macOS で運用する読み手は、自分の環境が当てはまらないと受け取るおそれがある。",
+      "check": "B",
+      "severity": "low",
+      "suggestion": "「macOS・Linux・WSL では」に直す。"
+    }
+  ],
+  "spot_checked_claims": ["C3", "C6", "C7", "C8", "C10", "C11", "C12", "C15", "C18", "C19", "C21", "C22", "C25", "C26", "C27", "C29", "C30", "C31", "C32", "C33", "C34", "C35", "C36", "C37", "C38", "C39", "C40", "C41", "C42", "C43"],
+  "escalation_reason": "判定ルールに従い、修正が必要なため REVISE ではなく ESCALATE とする（人間の許可で修正回数の上限は解除済み）。修正が必要な理由：B の high が1件ある。3.2 の tools 省略時の段落が sub-agents ページの「Inherits every tool available to subagents」を『利用可能なツールをすべて受け継ぐ』と訳しており、公式の2か所が食い違っているように見せている。実際の2か所は同じ内容。このほか A の medium が2件（専門用語の説明不足、出典一覧に ID と URL の対応がない）ある。E（安全）に当たる記述はない。D（範囲）では、MCP・フック・プラグインの解説は入っていない。照合の結果：追加された C25〜C43 のうち C25〜C27、C29〜C43 を、2026-10-20 に WebFetch で公式ページと照らし合わせ、quote がすべて原文と一致した（tools-reference と permissions は保存された本文で逐語に確認。sub-agents と skills は WebFetch の要約経由で、逐語の引用として確認）。C28 は本文で使われていないので照合していない。C3（優先度3・4）、C11、C12、C18、C19、C21 も一致した。review_v2 の指摘への対応：指摘1・3・4・5・6・8・10 は解消した。指摘7 は説明を付けたが出典がない（low）。指摘2 は [要調査] を外したが、食い違いとして並べる形になった（high）。指摘9 は分量欄が直っていない（low）。完了条件1・4・5 は満たしている。字数は進行役計測の2,689字で上限3,000字以内。人間に判断してほしいこと：(a) 上の high 1件・medium 2件を、Builder・Researcher にもう一度直させるか、人間が直接直すか。(b) C6 の conflict を false に直すことを認めるか。(c) team の4体の tools 指定（Glob・Grep あり、Bash なし）がこの Linux 環境で動くかを、動作確認するか（定義の修正は out_of_scope）。"
+}

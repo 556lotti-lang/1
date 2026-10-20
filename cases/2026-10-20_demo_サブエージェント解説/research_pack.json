@@ -1,0 +1,120 @@
+{
+  "task_id": "2026-10-20_demo",
+  "findings": [
+    {
+      "question": "Claude Code でサブエージェント定義ファイルを置く場所（プロジェクト単位とユーザー単位）はどこか、また両方にある場合どちらが優先されるか",
+      "claims": [
+        {"id": "C1", "claim": "ユーザー単位のサブエージェント定義は ~/.claude/agents/ に置き、全プロジェクトで使える。", "source": "https://code.claude.com/docs/en/sub-agents", "quote": "personal subagents available in all your projects", "retrieved_at": "2026-10-20", "confidence": "high", "conflict": false, "stale": false},
+        {"id": "C2", "claim": "プロジェクト単位のサブエージェント定義は .claude/agents/ に置き、そのコードベース専用でチームと共有できる。", "source": "https://code.claude.com/docs/en/sub-agents", "quote": "Project subagents (`.claude/agents/`) are ideal", "retrieved_at": "2026-10-20", "confidence": "high", "conflict": false, "stale": false},
+        {"id": "C3", "claim": "同名のサブエージェントが複数ある場合、優先度表ではプロジェクトの .claude/agents/（優先度3）がユーザーの ~/.claude/agents/（優先度4）より上に置かれており、プロジェクト側が優先される。", "source": "https://code.claude.com/docs/en/sub-agents", "quote": "When multiple subagents share the same name", "retrieved_at": "2026-10-20", "confidence": "high", "conflict": false, "stale": false, "note": "優先度の数字（3・4）は 2026-10-20 の 2 回目の WebFetch でも同じ値を確認。"}
+      ]
+    },
+    {
+      "question": "サブエージェント定義ファイルの frontmatter で name と description はそれぞれ何に使われるか（description はいつ自動委任の判断に使われるか）",
+      "claims": [
+        {"id": "C4", "claim": "name はサブエージェントの一意の識別子で、最大256文字。", "source": "https://code.claude.com/docs/en/sub-agents", "quote": "Unique identifier of at most 256 characters", "retrieved_at": "2026-10-20", "confidence": "high", "conflict": false, "stale": false},
+        {"id": "C5", "claim": "description は Claude がいつそのサブエージェントに委任すべきかを示す説明で、Claude は自動委任の判断にこの description を使う。", "source": "https://code.claude.com/docs/en/sub-agents", "quote": "When Claude should delegate to this subagent", "retrieved_at": "2026-10-20", "confidence": "high", "conflict": false, "stale": false}
+      ]
+    },
+    {
+      "question": "サブエージェント定義の tools フィールドを省略した場合と指定した場合で、使えるツールはどう変わるか",
+      "claims": [
+        {"id": "C6", "claim": "tools を省略すると、サブエージェントはメイン会話で利用可能なツールから一部を除いたものを受け継ぐ。バックグラウンドで動く場合（既定）は組み込みツールがさらに減る。", "source": "https://code.claude.com/docs/en/sub-agents", "quote": "narrowed by two filters", "retrieved_at": "2026-10-20", "confidence": "high", "conflict": true, "stale": false, "note": "修正前の claim（v2 の C6）: 「tools を省略すると、サブエージェントはメイン会話で利用可能なツールをすべて継承する。」 修正前の quote: 「Inherits every tool available」。修正理由: 同じページの Available tools 節は「narrowed by two filters」と書いており、Frontmatter reference の tools 行「Inherits every tool available to subagents if omitted.」と食い違って読めるため、両方を残し conflict: true とした。根拠は 2 か所（Frontmatter reference の tools 行／Control subagent capabilities > Available tools 節の段落）。"},
+        {"id": "C7", "claim": "tools を指定すると、サブエージェントは列挙したツールだけを使える。書式はカンマ区切りの文字列または YAML リスト。", "source": "https://code.claude.com/docs/en/sub-agents", "quote": "as a comma-separated string", "retrieved_at": "2026-10-20", "confidence": "high", "conflict": false, "stale": false},
+        {"id": "C8", "claim": "tools に指定したどの名前も有効なツールに解決されない場合、通常サブエージェントは起動に失敗する。", "source": "https://code.claude.com/docs/en/sub-agents", "quote": "usually fails to launch", "retrieved_at": "2026-10-20", "confidence": "medium", "conflict": false, "stale": false},
+        {"id": "C9", "claim": "サブエージェントの運用ベストプラクティスとして、ツールへのアクセスは必要な権限だけに絞ることが推奨されている。", "source": "https://code.claude.com/docs/en/sub-agents", "quote": "grant only necessary permissions", "retrieved_at": "2026-10-20", "confidence": "high", "conflict": false, "stale": false}
+      ]
+    },
+    {
+      "question": "サブエージェント定義の model フィールドに指定できる値と、省略時の挙動は何か",
+      "claims": [
+        {"id": "C10", "claim": "model には sonnet、opus、haiku、fable のエイリアス、完全なモデルID、または inherit を指定できる。", "source": "https://code.claude.com/docs/en/sub-agents", "quote": "`sonnet`, `opus`, `haiku`, `fable`", "retrieved_at": "2026-10-20", "confidence": "high", "conflict": false, "stale": false},
+        {"id": "C11", "claim": "model に inherit を指定すると、メイン会話と同じモデルを使う。", "source": "https://code.claude.com/docs/en/sub-agents", "quote": "or `inherit`.", "retrieved_at": "2026-10-20", "confidence": "medium", "conflict": false, "stale": false},
+        {"id": "C12", "claim": "model を省略すると Claude Code がサブエージェント向けのモデル順序に従ってモデルを選ぶ。最終的なフォールバックはメイン会話のモデル。", "source": "https://code.claude.com/docs/en/sub-agents", "quote": "The main conversation's model.", "retrieved_at": "2026-10-20", "confidence": "medium", "conflict": false, "stale": false}
+      ]
+    },
+    {
+      "question": "スキル（SKILL.md）を置く場所と、SKILL.md の frontmatter に必須のフィールドは何か",
+      "claims": [
+        {"id": "C13", "claim": "個人用スキルは ~/.claude/skills/<skill-name>/SKILL.md に置き、マシン上の全プロジェクトで使える。", "source": "https://code.claude.com/docs/en/skills", "quote": "~/.claude/skills/<skill-name>/SKILL.md", "retrieved_at": "2026-10-20", "confidence": "high", "conflict": false, "stale": false},
+        {"id": "C14", "claim": "プロジェクト用スキルは .claude/skills/<skill-name>/SKILL.md に置き、そのリポジトリのセッションで使える。", "source": "https://code.claude.com/docs/en/skills", "quote": ".claude/skills/<skill-name>/SKILL.md", "retrieved_at": "2026-10-20", "confidence": "high", "conflict": false, "stale": false},
+        {"id": "C15", "claim": "SKILL.md の frontmatter のフィールドはすべて任意で、推奨されるのは description のみ。", "source": "https://code.claude.com/docs/en/skills", "quote": "Only `description` is recommended", "retrieved_at": "2026-10-20", "confidence": "high", "conflict": false, "stale": false}
+      ]
+    },
+    {
+      "question": "スキルはどのような条件で読み込まれる／呼び出されるか（自動判断と /名前 による明示呼び出し）",
+      "claims": [
+        {"id": "C16", "claim": "Claude は関連性があると判断したときにスキルを使う（自動）。", "source": "https://code.claude.com/docs/en/skills", "quote": "Claude uses skills when relevant", "retrieved_at": "2026-10-20", "confidence": "high", "conflict": false, "stale": false},
+        {"id": "C17", "claim": "ユーザーはスキルを /skill-name の形で直接呼び出せる。", "source": "https://code.claude.com/docs/en/skills", "quote": "invoke one directly with `/skill-name`", "retrieved_at": "2026-10-20", "confidence": "high", "conflict": false, "stale": false}
+      ]
+    },
+    {
+      "question": "サブエージェントやスキルのファイルを追加・編集した場合、変更が反映されるのはいつか（セッション再起動が必要か、/agents コマンド経由の場合はどうか）",
+      "claims": [
+        {"id": "C18", "claim": "サブエージェント定義ファイルの変更は通常、Claude Code が数秒以内に検知し、次の委任から更新された定義が使われる。再起動は通常不要。", "source": "https://code.claude.com/docs/en/sub-agents", "quote": "detects the change within a few seconds", "retrieved_at": "2026-10-20", "confidence": "high", "conflict": false, "stale": false},
+        {"id": "C19", "claim": "再起動が必要な例外が3つある：新しい agents ディレクトリを初めて作った場合、--add-dir で追加したディレクトリのエージェント、--disable-slash-commands 付きで起動したセッション。", "source": "https://code.claude.com/docs/en/sub-agents", "quote": "Three cases still need a restart.", "retrieved_at": "2026-10-20", "confidence": "high", "conflict": false, "stale": false},
+        {"id": "C20", "claim": "/agents を実行すると、Claude に依頼するかディレクトリを直接編集するよう案内が表示される。v2.1.197 以前では /agents は対話ウィザードを開く。", "source": "https://code.claude.com/docs/en/sub-agents", "quote": "Running `/agents` prints a reminder", "retrieved_at": "2026-10-20", "confidence": "medium", "conflict": false, "stale": false},
+        {"id": "C21", "claim": "スキルファイルの変更は現在のセッション内で反映され、再起動は不要。ただし、セッション開始時に存在しなかったトップレベルの skills ディレクトリを新たに作った場合は /reload-skills が必要。", "source": "https://code.claude.com/docs/en/skills", "quote": "picks up the change within the current session", "retrieved_at": "2026-10-20", "confidence": "high", "conflict": false, "stale": false}
+      ]
+    },
+    {
+      "question": "Claude Code のツール権限（許可・確認・拒否）の基本的な仕組みは何か、またサブエージェントの tools 指定と権限設定はどう関係するか",
+      "claims": [
+        {"id": "C22", "claim": "ツール種別ごとの承認要否：ファイル読み取りと Grep は作業ディレクトリ内なら承認不要。Bash コマンドは組み込みの読み取り専用コマンドを除き承認が必要。ファイル編集・書き込みは承認が必要。", "source": "https://code.claude.com/docs/en/permissions", "quote": "Yes, except a built-in set of", "retrieved_at": "2026-10-20", "confidence": "high", "conflict": false, "stale": false},
+        {"id": "C23", "claim": "権限ルールは deny → ask → allow の順に評価され、最初に一致したものが結果を決める。ルールの具体性によって評価順は変わらない。", "source": "https://code.claude.com/docs/en/permissions", "quote": "first match in that order determines the outcome", "retrieved_at": "2026-10-20", "confidence": "high", "conflict": false, "stale": false},
+        {"id": "C24", "claim": "deny ルールは指定したツールを Claude Code が使うのを防ぐ。", "source": "https://code.claude.com/docs/en/permissions", "quote": "prevent Claude Code from using the specified tool", "retrieved_at": "2026-10-20", "confidence": "high", "conflict": false, "stale": false}
+      ]
+    },
+    {
+      "question": "【追加調査 項目2】サブエージェントに deny ルールと権限モードは効くか（組み込みサブエージェントの記述を自作に広げない）",
+      "claims": [
+        {"id": "C25", "claim": "設定ファイルの permissions.deny に Bash deny ルール（例：Bash(git push *)）を書くと、そのルールはメイン会話にもサブエージェントにも適用される。", "source": "https://code.claude.com/docs/en/sub-agents", "quote": "applies to the main conversation and to subagents", "retrieved_at": "2026-10-20", "confidence": "medium", "conflict": false, "stale": false, "note": "Restrict which tools a subagent can use 節の記述。原文: 「The rule applies to the main conversation and to subagents.」"},
+        {"id": "C26", "claim": "サブエージェント定義で permissionMode を省略すると、サブエージェントはメイン会話の権限モードを受け継ぐ。", "source": "https://code.claude.com/docs/en/sub-agents", "quote": "inherits the main conversation's permission mode", "retrieved_at": "2026-10-20", "confidence": "medium", "conflict": false, "stale": false, "note": "Permission modes 節の記述。原文: 「If you leave it unset, the subagent inherits the main conversation's permission mode.」"},
+        {"id": "C27", "claim": "メイン会話が bypassPermissions、acceptEdits、auto mode のいずれかのとき、サブエージェントはそのモードで動き、サブエージェント定義で指定した permissionMode は無視される。", "source": "https://code.claude.com/docs/en/sub-agents", "quote": "Claude Code ignores the `permissionMode` you set", "retrieved_at": "2026-10-20", "confidence": "medium", "conflict": false, "stale": false, "note": "Permission modes 節の記述。原文: 「When the main conversation is in `bypassPermissions`, `acceptEdits`, or auto mode, the subagent runs in that same mode and Claude Code ignores the `permissionMode` you set.」"},
+        {"id": "C28", "claim": "【組み込みサブエージェントに限る】組み込みサブエージェントは親会話の権限ルールを受け継ぎ、多くは制限されたツールセットで動く。自作のサブエージェント全般についての記述ではない。", "source": "https://code.claude.com/docs/en/sub-agents", "quote": "Each inherits the parent conversation's permission", "retrieved_at": "2026-10-20", "confidence": "medium", "conflict": false, "stale": false, "note": "Built-in subagents 節の記述。原文: 「Each inherits the parent conversation's permission rules; most run with a restricted tool set.」"}
+      ]
+    },
+    {
+      "question": "【追加調査 項目3】スキルの frontmatter の name の役割（原文の逐語引用）",
+      "claims": [
+        {"id": "C29", "claim": "SKILL.md の frontmatter の name は、/ メニューに表示されるコマンド名。", "source": "https://code.claude.com/docs/en/skills", "quote": "Command name shown in the `/` menu.", "retrieved_at": "2026-10-20", "confidence": "medium", "conflict": false, "stale": false, "note": "Frontmatter reference 表の name 行の Description 列。WebFetch は要約ツール経由で、表の該当セル文言を返した。生のページ本文での照合は未実施。"},
+        {"id": "C30", "claim": "SKILL.md の frontmatter の name を省略した場合、スキルのディレクトリ名がコマンド名になる。", "source": "https://code.claude.com/docs/en/skills", "quote": "Defaults to the directory name.", "retrieved_at": "2026-10-20", "confidence": "medium", "conflict": false, "stale": false, "note": "同上の name 行（Description 列の後半）。"}
+      ]
+    },
+    {
+      "question": "【追加調査 項目6・4.2 出典用】description の役割（サブエージェント／スキル）",
+      "claims": [
+        {"id": "C31", "claim": "スキルの SKILL.md の description は、Claude がいつそのスキルを使うかを判断するために使われる。推奨フィールド（必須ではない）。", "source": "https://code.claude.com/docs/en/skills", "quote": "Claude uses this to decide when to apply the skill", "retrieved_at": "2026-10-20", "confidence": "medium", "conflict": false, "stale": false, "note": "Frontmatter reference 表の description 行（Required: Recommended）。要約ツール経由。"},
+        {"id": "C32", "claim": "サブエージェント定義の description は必須項目（Required: Yes）で、Claude がいつそのサブエージェントに委任すべきかを示す。", "source": "https://code.claude.com/docs/en/sub-agents", "quote": "When Claude should delegate to this subagent", "retrieved_at": "2026-10-20", "confidence": "medium", "conflict": false, "stale": false, "note": "Frontmatter reference 表の description 行。必須かどうかの列（Yes）も同じ行で確認。"}
+      ]
+    },
+    {
+      "question": "【追加調査 項目4】承認表（権限の承認要否の表）はどの権限モードを前提にしているか",
+      "claims": [
+        {"id": "C33", "claim": "Permission system 節の承認表は、ツール種別ごとに Manual モードで操作前に承認を求めるかを示すものとして書かれている。他の権限モードでは、どの操作で承認を求めるかが変わる。", "source": "https://code.claude.com/docs/en/permissions", "quote": "whether Manual mode asks before the action runs", "retrieved_at": "2026-10-20", "confidence": "high", "conflict": false, "stale": false, "note": "導入文の原文: 「The table shows, for each tool type, whether Manual mode asks before the action runs. The other permission modes change which of these ask you」。 raw 本文で確認。"}
+      ]
+    },
+    {
+      "question": "【追加調査 項目5】tools-reference の Read・Write・Edit・Glob・Grep・Bash の説明（Glob/Grep の既定の条件を含む）",
+      "claims": [
+        {"id": "C34", "claim": "Read は、ファイルの内容を読むツール。Permission required は No。", "source": "https://code.claude.com/docs/en/tools-reference", "quote": "Reads the contents of files.", "retrieved_at": "2026-10-20", "confidence": "high", "conflict": false, "stale": false, "note": "ツール表の Read 行。raw 本文で確認。"},
+        {"id": "C35", "claim": "Write は、ファイルを作成または上書きするツール。Permission required は Yes。", "source": "https://code.claude.com/docs/en/tools-reference", "quote": "Creates or overwrites files.", "retrieved_at": "2026-10-20", "confidence": "high", "conflict": false, "stale": false, "note": "ツール表の Write 行。raw 本文で確認。"},
+        {"id": "C36", "claim": "Edit は、特定のファイルに対して的を絞った編集を行うツール。Permission required は Yes。", "source": "https://code.claude.com/docs/en/tools-reference", "quote": "Makes targeted edits to specific files.", "retrieved_at": "2026-10-20", "confidence": "high", "conflict": false, "stale": false, "note": "ツール表の Edit 行。raw 本文で確認。"},
+        {"id": "C37", "claim": "Glob は、パターンでファイルを探すツール。macOS、Linux、WSL では既定のツールセットに含まれない（absent by default）。Permission required は No。", "source": "https://code.claude.com/docs/en/tools-reference", "quote": "Absent by default on macOS, Linux, and WSL.", "retrieved_at": "2026-10-20", "confidence": "high", "conflict": false, "stale": false, "note": "ツール表の Glob 行（説明列は「Finds files based on pattern matching.」）。raw 本文で確認。"},
+        {"id": "C38", "claim": "Grep は、ファイルの中身からパターンを検索するツール。macOS、Linux、WSL では既定のツールセットに含まれない（absent by default）。Permission required は No。", "source": "https://code.claude.com/docs/en/tools-reference", "quote": "Absent by default on macOS, Linux, and WSL.", "retrieved_at": "2026-10-20", "confidence": "high", "conflict": false, "stale": false, "note": "ツール表の Grep 行（説明列は「Searches for patterns in file contents.」）。raw 本文で確認。"},
+        {"id": "C39", "claim": "Bash は、自分の環境でシェルコマンドを実行するツール。Permission required は Yes。", "source": "https://code.claude.com/docs/en/tools-reference", "quote": "Executes shell commands in your environment.", "retrieved_at": "2026-10-20", "confidence": "high", "conflict": false, "stale": false, "note": "ツール表の Bash 行。raw 本文で確認。"},
+        {"id": "C40", "claim": "macOS、Linux、WSL では、Claude Code は Glob と Grep を既定のツールセットから外し、ファイル探索を Bash ツール経由の find と grep で行う。", "source": "https://code.claude.com/docs/en/tools-reference", "quote": "leaves Glob and Grep out of the default tool set", "retrieved_at": "2026-10-20", "confidence": "high", "conflict": false, "stale": false, "note": "Glob tool behavior 節の記述。raw 本文で確認。"},
+        {"id": "C41", "claim": "macOS、Linux、WSL で Glob と Grep が使えるようになる条件の一つは、サブエージェントの tools に Glob または Grep を列挙し、Bash を列挙しない場合である（そのサブエージェントだけで使える）。", "source": "https://code.claude.com/docs/en/tools-reference", "quote": "leaves out `Bash`", "retrieved_at": "2026-10-20", "confidence": "high", "conflict": false, "stale": false, "note": "Glob tool behavior 節の箇条書き3つ目。他の条件（--tools／--allowedTools で指定、Bash を外す deny ルール等）も同じ節にある。raw 本文で確認。"},
+        {"id": "C42", "claim": "ツール名は、権限ルール、サブエージェントの tools リスト、フックのマッチャーで使う正確な文字列である。", "source": "https://code.claude.com/docs/en/tools-reference", "quote": "The tool names are the exact strings you use in", "retrieved_at": "2026-10-20", "confidence": "high", "conflict": false, "stale": false, "note": "ページ冒頭の文。raw 本文で確認。"},
+        {"id": "C43", "claim": "Read、Grep、Glob などのファイルアクセス系ツールは、作業ディレクトリと追加ディレクトリの外のパスについては、Permission required が No でも確認を求める。", "source": "https://code.claude.com/docs/en/tools-reference", "quote": "still prompt for paths outside the", "retrieved_at": "2026-10-20", "confidence": "high", "conflict": false, "stale": false, "note": "冒頭の Info 欄（auto mode の説明に続く部分）。raw 本文で確認。"}
+      ]
+    }
+  ],
+  "unverified": [
+    "サブエージェントの tools フィールドと権限設定（permissions）の関係を明記した記述は、読んだ範囲のサブエージェントページと権限ページでは確認できなかった。tools は利用可能なツールの範囲、権限ルールは実行時の承認という別の仕組みとして読めるが、両者の連動の仕様は未確認。",
+    "スキルの description が自動判断でどのように照合されるかの詳細は、公式の要約からは確認できなかった（C16 は「関連性があるとき使う」という事実のみ）。",
+    "ツール名の正式な一覧（tools フィールドに書けるツール名）は tools-reference ページ未取得のため未確認。",
+    "各ページの公開日・最終更新日は取得結果に表示されていないため、stale 判定は行わず false としたが、鮮度は未確認。"
+  ],
+  "needs_permission": []
+}

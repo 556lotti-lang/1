@@ -1,0 +1,79 @@
+{
+  "task_id": "2026-10-20_demo",
+  "revision_round": 2,
+  "verdict": "ESCALATE",
+  "issues": [
+    {
+      "location": "2章 早見表「ツール」の行（Read（読む）・Write（書く）・Edit（直す）・Glob と Grep（探す）・Bash（コマンド＝命令文の実行））、同じく「frontmatter」の行",
+      "problem": "【Builder 判断依頼①への回答：抵触する】各ツールが何をするかは Claude Code の仕様にあたる記述で、一般的な言い換えとは言えない。完了条件2は「事実・仕様に関する記述はすべて」出典IDに紐づくことを求めているが、この行には出典IDがない。自己チェックでは完了条件2を ✅ としながら例外を認めており、自己チェックの内容とも食い違っている。さらに公式の tools-reference には、Glob と Grep が「Absent by default on macOS, Linux, and WSL」とある。そのため「Claude が使う機能です。例：…Glob と Grep」は、この Linux 環境では成り立たないおそれがある。「frontmatter：ファイル冒頭の --- で囲んだ設定欄」にも出典IDがない。",
+      "check": "C",
+      "severity": "high",
+      "suggestion": "Researcher に https://code.claude.com/docs/en/tools-reference のツール表から claim を追加してもらう（WebFetch で確認済み）。対象の行：Read「Reads the contents of files.」、Write「Creates or overwrites files.」、Edit「Makes targeted edits to specific files.」、Glob「Finds files based on pattern matching. Absent by default on macOS, Linux, and WSL.」、Grep「Searches for patterns in file contents. Absent by default on macOS, Linux, and WSL.」、Bash「Executes shell commands in your environment.」。冒頭の「The tool names are the exact strings you use in permission rules, subagent tool lists, and hook matchers.」も追加候補。Builder はツールの行にその ID を付ける。Glob/Grep の注記を入れるかは字数と相談する。claim を足せない場合は、ツール名と動作の対応を書かずに「Claude が使う機能（読み書きなど）」程度にとどめる。frontmatter の行は、sub-agents ページで frontmatter の書式を説明している箇所を claim にしてもらって ID を付けるか、仕様に踏み込まない言い方にする。"
+    },
+    {
+      "location": "3.2 **tools**「省略すると利用可能なツールを受け継ぎます[C6]（絞られる条件は [要調査]）」（review_v1 指摘3）",
+      "problem": "公式で確認できる内容を [要調査] のまま残しているため、research_questions 3 の答えが不完全なままになっている。research_pack の C6 も「メイン会話で利用可能なツールをすべて継承」と言い過ぎたままで、直っていない。",
+      "check": "A",
+      "severity": "medium",
+      "suggestion": "Researcher に https://code.claude.com/docs/en/sub-agents の2か所を引用して C6 を直してもらう（WebFetch で確認済み）。(1) Frontmatter reference の tools 行「Inherits every tool available to subagents if omitted.」。(2) 「Control subagent capabilities > Available tools」節「Subagents inherit the built-in tools and MCP tools available in the main conversation, narrowed by two filters: the first removes a short list of tools from every subagent, and the second reduces the built-in tool set for subagents that run in the background, which is the default.」。Builder は「省略すると、メイン会話のツールから一部を除いたものを受け継ぎます（裏で動かすときはさらに減ります）」のように1文で書く。"
+    },
+    {
+      "location": "5章「サブエージェントがメイン会話の権限ルールを受け継ぐかは [要調査] です。」（review_v1 指摘4）",
+      "problem": "公式で確認できる内容を [要調査] のまま残しているため、research_questions 8（tools 指定と権限設定の関係）に答えていない。メモの目的である「安全に運用」に直接かかわる点が抜けている。",
+      "check": "A",
+      "severity": "medium",
+      "suggestion": "Researcher に https://code.claude.com/docs/en/sub-agents から claim を追加してもらう（WebFetch で確認済み）。(1) 「Restrict which tools a subagent can use」節「add a Bash deny rule such as `Bash(git push *)` to `permissions.deny` in your settings. The rule applies to the main conversation and to subagents.」。(2) 「Permission modes」節「If you leave it unset, the subagent inherits the main conversation's permission mode.」と「When the main conversation is in `bypassPermissions`, `acceptEdits`, or auto mode, the subagent runs in that same mode and Claude Code ignores the `permissionMode` you set.」。注意：「Each inherits the parent conversation's permission rules」は「Built-in subagents」節（組み込みのサブエージェント）の記述なので、自作のサブエージェント全般に当てはまるように claim を書かない。Builder は「設定の deny ルールはサブエージェントにも効きます。権限モードは通常メイン会話のものを受け継ぎます」と1〜2文で書く。"
+    },
+    {
+      "location": "4.2 **name**「実物はフォルダ名と同じです。公式な役割は [要調査] です。」（review_v1 指摘5）",
+      "problem": "公式で確認できる内容を [要調査] のまま残している。name を変えると呼び出し名（/agent-team）が変わることを、運用担当者が知らないまま修正するおそれがある。",
+      "check": "A",
+      "severity": "medium",
+      "suggestion": "Researcher に https://code.claude.com/docs/en/skills の Frontmatter reference 表にある name 行を claim にしてもらう。今回の WebFetch では要約経由で「The `name` field defaults to the directory name.」までは確認できた。v1 で確認した原文は「Command name shown in the / menu. Defaults to the directory name.」。Researcher は表の原文を逐語で quote にすること。Builder は「name は / メニューに出る呼び出し名で、省略するとフォルダ名になります[Cxx]」と書く。"
+    },
+    {
+      "location": "5章「承認の要否は次のとおりです[C22]（設定による違いは [要調査]）」（review_v1 指摘7）",
+      "problem": "公式で確認できる前提（Manual モードの表であること）を [要調査] にしたため、表がいつでも当てはまるかのように読める状態が続いている。",
+      "check": "B",
+      "severity": "low",
+      "suggestion": "Researcher に https://code.claude.com/docs/en/permissions の「Permission system」節の導入文を C22 の quote に足すか、別の claim にしてもらう（WebFetch で確認済み）：「The table shows, for each tool type, whether Manual mode asks before the action runs. The other permission modes change which of these ask you」。Builder は「標準（Manual）モードの場合、承認の要否は次のとおりです。ほかのモードでは変わります[Cxx]」と書く。"
+    },
+    {
+      "location": "4.2 **description**「使う場面を書きます。」",
+      "problem": "スキルの description の役割（Claude が使う場面を判断するためのもの）は仕様にあたる記述だが、出典IDがない。C15 の claim は「推奨は description のみ」という内容にとどまり、役割までは書かれていない。",
+      "check": "C",
+      "severity": "medium",
+      "suggestion": "Researcher に https://code.claude.com/docs/en/skills の「Only `description` is recommended so Claude knows when to use the skill.」を、文末まで含めて C15 の quote にしてもらう（要約経由で確認）。Builder は「使う場面を書きます。Claude はこれを見て使うか判断します[C15]」と ID を付ける。"
+    },
+    {
+      "location": "6章 2項目目の `--disable-slash-commands`",
+      "problem": "「起動時の追加設定」という説明は文の構造上 `--add-dir` にしか掛かっておらず、`--disable-slash-commands` が何をするものか、非エンジニアには分からない。完了条件3（初出の専門用語に説明を付ける）を満たしていない。",
+      "check": "A",
+      "severity": "low",
+      "suggestion": "「`/〇〇` の指示を使えなくする起動設定 `--disable-slash-commands`」のように短く説明を付ける。"
+    },
+    {
+      "location": "6章 2項目目「例外として次の3つは再起動が必要です[C19]：agents フォルダを初めて作った場合、…付きで起動した場合。」",
+      "problem": "1文が60字を大きく超えている。",
+      "check": "F",
+      "severity": "low",
+      "suggestion": "「例外として次の3つは再起動が必要です[C19]。」で文を切り、3つの場合を入れ子の箇条書きにする。"
+    },
+    {
+      "location": "「## 自己チェック」の分量欄・完了条件2欄",
+      "problem": "分量の基準が「空白除き2,800字以下」になっているが、request.md の上限は3,000字。完了条件2は ✅ と書きつつ、出典IDのない記述が残っていることを認めていて、矛盾している。",
+      "check": "F",
+      "severity": "low",
+      "suggestion": "分量欄は「進行役計測 2,749字（上限3,000字）」に直す。完了条件2は、指摘1を解消してから ✅ にする。"
+    },
+    {
+      "location": "「## 要確認事項」の C3 の項目",
+      "problem": "C3 の優先度は原文で確認できるのに、[要調査] が残っている。",
+      "check": "B",
+      "severity": "low",
+      "suggestion": "sub-agents ページの「Choose the subagent scope」節の表で、`.claude/agents/` が Priority 3、`~/.claude/agents/` が Priority 4 であることを WebFetch で確認した。Researcher に C3 の confidence を high にしてもらい、Builder は要確認事項からこの項目を消す。"
+    }
+  ],
+  "spot_checked_claims": ["C1", "C2", "C3", "C4", "C5", "C6", "C7", "C8", "C9", "C10", "C11", "C12", "C13", "C14", "C15", "C16", "C17", "C18", "C19", "C20", "C21", "C22", "C23", "C24"],
+  "escalation_reason": "修正回数が2回に達した（v1 REVISE → v2）。v2 でも A（完了条件2・3、research_questions 3・8 への回答不足）と C（出典IDの欠落）の修正が必要なため、decision_rules に従って ESCALATE とする。出典の不一致はなし：C1〜C24 を公式ページで WebFetch により照合した（C13〜C17・C21 は要約経由）。quote と本文の主張は一致しており、C20 の v2.1.197 の記述は本文で使われていない。E（安全）にあたる記述もない。分量は進行役計測の 2,749字で上限内。【Builder 判断依頼②への回答】「## 成果物」を削って h1 から始め、区切り線で自己チェックと分けた形式は outline と一致しており、見出しの階層も正しいので問題なし（指摘なし）。人間に判断してほしいこと：(a) 追加の claim（指摘1〜6の suggestion にページと原文を記載）を Researcher に集めさせて、3回目の修正を認めるか。(b) 公式によると Glob/Grep は Linux では既定で使えないため、planner など team の tools 指定がこの環境で意図どおりに動くかを確認するか（team の定義ファイルの修正は out_of_scope なので、確認のみ）。"
+}
