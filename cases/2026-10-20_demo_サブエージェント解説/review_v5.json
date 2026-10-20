@@ -1,0 +1,51 @@
+{
+  "task_id": "2026-10-20_demo",
+  "revision_round": 5,
+  "verdict": "PASS",
+  "issues": [
+    {
+      "location": "3.2 **tools**「これはメイン会話のツールから一部を除いたもので、裏で動く場合（既定）はさらに減ります[C6]。」と、research_pack の C6",
+      "problem": "review_v4 指摘3（low）が直っていない。research_pack の C6 の quote は今も「Inherits every tool available to subagents if omitted.」だけ。本文の2文目を支える原文は note にしかない。2026-10-20 に WebFetch で sub-agents ページの Available tools 節を確認し、「narrowed by two filters: the first removes a short list of tools from every subagent, and the second reduces the built-in tool set for subagents that run in the background, which is the default.」とあった。内容は本文と一致しており、出典の不一致ではない。",
+      "check": "B",
+      "severity": "low",
+      "suggestion": "Researcher：C6 の quote に「narrowed by two filters」を足す。本文は直さなくてよい。"
+    },
+    {
+      "location": "research_pack C48 の quote「Everything」",
+      "problem": "quote が短く、auto 行（Everything, with background safety checks）と区別できない。どの行かは note を読まないと分からない。原文（permission-modes の表、bypassPermissions 行）と内容は一致した。",
+      "check": "B",
+      "severity": "low",
+      "suggestion": "Researcher：quote を行全体が分かる形にする。例：「`bypassPermissions` | Everything | Isolated containers and VMs only」。本文は直さなくてよい。"
+    },
+    {
+      "location": "5章 1つ目の箇条「権限ルールは deny（拒否）→ ask（確認）→ allow（許可）の順に見ます。」",
+      "problem": "「権限ルール」という言葉そのものを説明していない（lessons 3、完了条件3）。deny・ask・allow の意味は括弧で分かるので、読み手が困る程度は小さい。",
+      "check": "F",
+      "severity": "low",
+      "suggestion": "例：「権限ルール（設定ファイルに書く、ツールごとの許可・確認・拒否の決まり）は、deny（拒否）→ …」。字数が足りなければ直さなくてよい。"
+    },
+    {
+      "location": "3.2 **tools**「macOS・Linux・WSL（基本ソフトの種類など）」",
+      "problem": "WSL は Windows 上で Linux を動かす仕組みで、「基本ソフトの種類」とは少し違う。「など」があるので誤りではない。",
+      "check": "F",
+      "severity": "low",
+      "suggestion": "例：「macOS・Linux・WSL（Windows 上の Linux 環境）」。直さなくてもよい。"
+    },
+    {
+      "location": "3.2 **model**「指定できるのは sonnet・opus・haiku・fable の略称、完全なモデルID（正式名）、inherit です[C10]。」",
+      "problem": "出典IDを入れて約60字で、目安ちょうど。",
+      "check": "F",
+      "severity": "low",
+      "suggestion": "直さなくてもよい。分けるなら「指定できるのは sonnet・opus・haiku・fable の略称です。完全なモデルID（正式名）と inherit も使えます[C10]。」"
+    },
+    {
+      "location": "3.1「team の定義はプロジェクト単位です［進行役確認］」と、要確認事項の [人間判断]（ホームが /root、作業フォルダが /home/user という前提）",
+      "problem": "公式の出典ではなく、環境の前提に頼った記述。要確認事項に正しく分けてあるので PASS は妨げない。参考までに、このレビューを動かしたセッションの作業フォルダは /home/user/1 だった。どのフォルダで Claude Code を起動するかで、/home/user/.claude/ がプロジェクト単位として読まれるかが変わるおそれがある。",
+      "check": "A",
+      "severity": "low",
+      "suggestion": "人間が最終承認のときに、team を起動するフォルダ（/home/user か /home/user/1 か）を確かめる。本文は直さなくてよい。"
+    }
+  ],
+  "spot_checked_claims": ["C45", "C46", "C47", "C48", "C49", "C6"],
+  "escalation_reason": "判定は PASS（進行役の判定ルール：A〜E に問題がなければ PASS）。high 0件、medium 0件、low 6件（B 2件、F 3件、A 1件）。いずれも直さなくても PASS を妨げない。\n\n【判定ルールの食い違い（人間に伝えること）】Reviewer の定義では、修正回数が2回に達したら ESCALATE となる。今回は revision_round 5。review_v4 には『人間の許可により修正回数の上限は解除されている』とあるが、その許可を Reviewer は自分で確かめられない。今回は進行役が示したルールで判定し、結果は人間の最終承認（ゲートB）に回る。上限の解除が人間の判断で間違いないかは、ゲートBで確かめてほしい。\n\n【照合（B）】2026-10-20 に WebFetch で確認。permission-modes ページのモード一覧表で、C45（default：「Reads only」）、C46（acceptEdits：「Reads, file edits, and common filesystem commands (`mkdir`, `touch`, `mv`, `cp`, etc.)」）、C47（auto：「Everything, with background safety checks」）、C48（bypassPermissions：「Everything」、Best for「Isolated containers and VMs only」）が原文と一致。default が CLI 等で Manual と表示されることも同じページで確認した。sub-agents ページの Permission modes 節で、C49 の一文（When the main conversation is in `bypassPermissions`, `acceptEdits`, or auto mode, the subagent runs in that same mode and Claude Code ignores the `permissionMode` you set.）と C26 が一致。C6 も tools 行と Available tools 節の両方で一致した。出典の不一致は0件。\n\n【review_v4 の指摘】medium 1件（権限モード名の説明）：解消。5章で4つのモードを、確認なしで行う範囲としてそれぞれ説明し、出典もある。該当の [要調査] は消え、出典一覧に permission-modes の行が加わった。low 2（planner の抜粋）：解消。「（前略）最初の段階で使う。（後略）」とあり、実物の planner.md とも一致する。low 3（C6 の quote）：未解消。Researcher 側の作業で、本文は正しい（上の issues 1）。low 4（--add-dir）：解消。C50 で出典を付け、[要調査] は消えた。low 5（C23 の文の長さ）：解消。2文に分かれた。\n\n【lessons】1（限定語）：守られている。C25（設定ファイルの Bash deny ルール）、C40・C41（macOS・Linux・WSL）、C6（to subagents、裏で動く場合は既定）、C21（最上位の skills フォルダ）、C49（3つのモード）のいずれも、限定語が残っている。2（conflict）：守られている。全 claim が conflict: false。3（モード名の説明）：守られている。Manual（default）・acceptEdits・auto mode・bypassPermissions・permissionMode・inherit のそれぞれに説明がある（権限ルールの語の説明不足は low）。4（出典一覧）：守られている。本文で使っている ID はすべて、出典一覧のどれか1行（共通の URL の先頭＋ページ名）に入っている。ページの割り当ての誤りもない。\n\n【その他】A：完了条件1〜5を満たす。字数は進行役の計測で2,963字（上限3,000字以内）、本文中の [要調査] は0件。C：出典IDのない仕様の記述はない。実物の記述（Edit なし、name がフォルダ名と同じ）は、planner.md と SKILL.md で確かめた。D：MCP・フック・プラグイン・インストール・料金の記述はない。E：個人情報、機密情報、法的・医療的な断定、対外的な約束はない。要確認事項の [要調査] 2件と [人間判断] 5件は、正しく分けてある。\n\n【人間に判断してほしいこと】(a) 修正回数の上限を解除したこと（上記）。(b) low 6件を直すか。(c) 3.1 の前提（ホームと、team を起動する作業フォルダ）。(d) team の tools 指定（Glob・Grep あり、Bash なし）が Linux 環境で動くかを確かめるか。(e) 社内配布の可否と範囲。"
+}

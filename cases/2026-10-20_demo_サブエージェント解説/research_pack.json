@@ -114,6 +114,27 @@
       "claims": [
         {"id": "C44", "claim": "起動フラグ --disable-slash-commands は、そのセッションのスキルとコマンドをすべて無効にする。", "source": "https://code.claude.com/docs/en/cli-reference", "quote": "Disable all skills and commands for this session", "retrieved_at": "2026-10-20", "confidence": "high", "conflict": false, "stale": false, "note": "CLI flags 表の --disable-slash-commands 行の Description 列。2026-10-20 に WebFetch で確認（要約ツール経由で返された原文の一文を引用）。C19 の再起動例外とは別の記述。"}
       ]
+    },
+    {
+      "question": "【追加調査 permission-modes】各権限モードで確認なしで実行されるもの（default（Manual）・acceptEdits・auto・bypassPermissions）",
+      "claims": [
+        {"id": "C45", "claim": "default（Manual）モードでは、確認なしで実行されるのは読み取りのみ。", "source": "https://code.claude.com/docs/en/permission-modes", "quote": "Reads only", "retrieved_at": "2026-10-20", "confidence": "high", "conflict": false, "stale": false, "note": "モード一覧表の default 行（What runs without asking 列）。default が Manual と表示されることは cli-reference の --permission-mode 行（manual は default の別名で、UI では Manual と表示）で確認。WebFetch の要約ツール経由で、表の英語原文を引用。"},
+        {"id": "C46", "claim": "acceptEdits モードでは、読み取り、ファイルの編集、mkdir・touch・mv・cp などの一般的なファイルシステムコマンドが確認なしで実行される。", "source": "https://code.claude.com/docs/en/permission-modes", "quote": "Reads, file edits, and common filesystem commands", "retrieved_at": "2026-10-20", "confidence": "high", "conflict": false, "stale": false, "note": "モード一覧表の acceptEdits 行。原文の括弧内は (`mkdir`, `touch`, `mv`, `cp`, etc.)。WebFetch の要約ツール経由。"},
+        {"id": "C47", "claim": "auto モードでは、何でも確認なしで実行される。ただしバックグラウンドで安全確認が行われる。", "source": "https://code.claude.com/docs/en/permission-modes", "quote": "Everything, with background safety checks", "retrieved_at": "2026-10-20", "confidence": "high", "conflict": false, "stale": false, "note": "モード一覧表の auto 行。WebFetch の要約ツール経由。"},
+        {"id": "C48", "claim": "bypassPermissions モードでは、何でも確認なしで実行される。表の Best for 列では「隔離されたコンテナと VM 専用」とされている（原文: Isolated containers and VMs only）。", "source": "https://code.claude.com/docs/en/permission-modes", "quote": "Everything", "retrieved_at": "2026-10-20", "confidence": "high", "conflict": false, "stale": false, "note": "モード一覧表の bypassPermissions 行。Best for 列の原文は「Isolated containers and VMs only」。WebFetch の要約ツール経由。"}
+      ]
+    },
+    {
+      "question": "【追加調査 sub-agents】メイン会話が bypassPermissions などのとき、サブエージェント定義の permissionMode は優先されるか",
+      "claims": [
+        {"id": "C49", "claim": "メイン会話が bypassPermissions、acceptEdits、auto mode のいずれかのとき、サブエージェントはそのモードで動き、定義に書いた permissionMode は無視される（親のモードが優先される）。", "source": "https://code.claude.com/docs/en/sub-agents", "quote": "Claude Code ignores the `permissionMode` you set", "retrieved_at": "2026-10-20", "confidence": "high", "conflict": false, "stale": false, "note": "Permission modes 節（親節は Control subagent capabilities）の完全な一文: 「When the main conversation is in `bypassPermissions`, `acceptEdits`, or auto mode, the subagent runs in that same mode and Claude Code ignores the `permissionMode` you set.」。C27 と同じ内容を、節名と完全な文で再確認した。WebFetch の要約ツール経由。"}
+      ]
+    },
+    {
+      "question": "【追加調査 cli-reference】--add-dir の説明",
+      "claims": [
+        {"id": "C50", "claim": "--add-dir は、Claude がファイルを読み書きするための作業フォルダを追加する起動フラグ。ファイルへのアクセスを与えるが、Claude Code はそれらのフォルダ内の .claude/ 設定の多くは探さない。", "source": "https://code.claude.com/docs/en/cli-reference", "quote": "Add additional working directories for Claude", "retrieved_at": "2026-10-20", "confidence": "high", "conflict": false, "stale": false, "note": "CLI flags 表の --add-dir 行の Description 列。原文の続き: 「Grants file access; Claude Code doesn't discover most .claude/ configuration from these directories.」。永続化には settings の permissions.additionalDirectories が必要（同行）。WebFetch の要約ツール経由。"}
+      ]
     }
   ],
   "unverified": [
