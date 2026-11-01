@@ -23,7 +23,7 @@ body{
 @media (prefers-reduced-motion:reduce){html{scroll-behavior:auto}}
 
 /* ---------- scroll driver ---------- */
-#scroll{height:820vh}
+#scroll{height:660vh}
 
 /* ---------- fixed canvas ---------- */
 #stage{
@@ -38,12 +38,12 @@ body{
 }
 #map svg{display:block;width:100%;height:100%;position:relative;z-index:1}
 /* the land continues past the map box so there is never a letterbox band */
-#map .bleed{position:absolute;left:-130%;right:-130%;z-index:0;pointer-events:none}
+#map .bleed{position:absolute;left:-190%;right:-190%;z-index:0;pointer-events:none}
 #map .bleed.mid{top:0;bottom:0;background:linear-gradient(to bottom,
   #F4E9DC 0%,#F4E9DC 41%,#7FC9DF 41%,#7FC9DF 46.5%,
   #1E6B52 46.5%,#1E6B52 78%,#17543F 78%,#17543F 84%,#1E6B52 84%,#1E6B52 100%)}
-#map .bleed.top{bottom:100%;height:160%;background:#F4E9DC}
-#map .bleed.bot{top:100%;height:160%;background:#1E6B52}
+#map .bleed.top{bottom:100%;height:240%;background:#F4E9DC}
+#map .bleed.bot{top:100%;height:240%;background:#1E6B52}
 
 /* ---------- drifting decor clouds ---------- */
 #drift{position:fixed;inset:0;z-index:2;pointer-events:none;overflow:hidden}
@@ -524,6 +524,26 @@ body{
   <g transform="translate(60,1440)"><g class="sway" style="--d:1.89s"><use href="#tr2" transform="scale(.95)"/></g></g>
   <g transform="translate(452,1420)"><g class="spin"><use href="#ball" transform="scale(.8)"/></g></g>
 
+
+  <!-- ===== close-up detail: props and voices ===== -->
+  <g transform="translate(640,1058) scale(1.0)"><ellipse cx="0" cy="12" rx="17" ry="5" fill="#C9572A"/><path d="M0,-20 L12,12 H-12 Z" fill="#E87A3E"/><path d="M-7,-2 h14 l2,6 h-18 z" fill="#FFF3DF"/></g>
+  <g transform="translate(1112,1058) scale(0.9)"><ellipse cx="0" cy="12" rx="17" ry="5" fill="#C9572A"/><path d="M0,-20 L12,12 H-12 Z" fill="#E87A3E"/><path d="M-7,-2 h14 l2,6 h-18 z" fill="#FFF3DF"/></g>
+  <g transform="translate(596,1146)"><rect x="-30" y="-6" width="34" height="22" rx="8" fill="#5FA8C9"/><rect x="-24" y="-12" width="22" height="8" rx="4" fill="#4A8BA8"/><rect x="0" y="0" width="32" height="18" rx="8" fill="#E9A0A8"/><rect x="6" y="-5" width="20" height="7" rx="3.5" fill="#CE7F89"/></g>
+  <g transform="translate(614,1096)"><g transform="translate(-14,0)"><rect x="-5" y="-16" width="10" height="24" rx="4" fill="#7FC9DF"/><rect x="-3" y="-21" width="6" height="6" rx="2" fill="#2A211B"/></g><g transform="translate(0,0)"><rect x="-5" y="-16" width="10" height="24" rx="4" fill="#F5C76B"/><rect x="-3" y="-21" width="6" height="6" rx="2" fill="#2A211B"/></g><g transform="translate(14,0)"><rect x="-5" y="-16" width="10" height="24" rx="4" fill="#8FC7A8"/><rect x="-3" y="-21" width="6" height="6" rx="2" fill="#2A211B"/></g></g>
+  <g transform="translate(760,1252)"><path d="M-51.0,-18 H51.0 A18,18 0 0 1 51.0,18 H2 L-3,30 L-11,18 H-51.0 A18,18 0 0 1 -51.0,-18 Z" fill="#FFF9F0" stroke="#2A211B" stroke-width="2.6" stroke-linejoin="round"/><text x="0" y="7" text-anchor="middle" font-size="18" font-weight="700" fill="#2A211B">ナイスパス！</text></g>
+  <g transform="translate(930,756)"><path d="M-69.0,-18 H69.0 A18,18 0 0 1 69.0,18 H2 L-3,30 L-11,18 H-69.0 A18,18 0 0 1 -69.0,-18 Z" fill="#FFF9F0" stroke="#2A211B" stroke-width="2.6" stroke-linejoin="round"/><text x="0" y="7" text-anchor="middle" font-size="18" font-weight="700" fill="#2A211B">経験0年、大歓迎</text></g>
+  <g transform="translate(132,1128)"><rect x="-38" y="-26" width="76" height="52" rx="5" fill="#C9B79C"/><path d="M-38,-8 h76 M-38,8 h76" stroke="#A89581" stroke-width="2.5"/><rect x="-34" y="-22" width="20" height="11" rx="5" fill="#E87A3E"/><rect x="-10" y="-22" width="20" height="11" rx="5" fill="#5FA8C9"/><rect x="14" y="-22" width="20" height="11" rx="5" fill="#FFF7EA"/><rect x="-34" y="-6" width="20" height="11" rx="5" fill="#F5C76B"/><rect x="-10" y="-6" width="20" height="11" rx="5" fill="#E9A0A8"/><rect x="14" y="-6" width="20" height="11" rx="5" fill="#8FC7A8"/></g>
+  <g transform="translate(560,1142)"><rect x="-24" y="-44" width="48" height="76" rx="6" fill="#D9543C"/><rect x="-18" y="-38" width="26" height="44" rx="3" fill="#FFF3DF"/><g fill="#5FA8C9"><rect x="-15" y="-34" width="8" height="11" rx="3"/><rect x="-4" y="-34" width="8" height="11" rx="3"/></g><g fill="#F5C76B"><rect x="-15" y="-19" width="8" height="11" rx="3"/><rect x="-4" y="-19" width="8" height="11" rx="3"/></g><rect x="12" y="-36" width="8" height="26" rx="3" fill="#2A211B"/><rect x="-18" y="12" width="36" height="12" rx="3" fill="#2A211B"/></g>
+  <g transform="translate(432,1210)"><rect x="-34" y="-4" width="68" height="9" rx="4.5" fill="#8C5A3C"/><rect x="-34" y="-20" width="68" height="8" rx="4" fill="#8C5A3C"/><rect x="-28" y="5" width="7" height="18" rx="3.5" fill="#6E452C"/><rect x="21" y="5" width="7" height="18" rx="3.5" fill="#6E452C"/><path d="M-16,-6 q8,-10 16,0 q8,10 16,0" stroke="#FFF7EA" stroke-width="5" fill="none" stroke-linecap="round"/></g>
+  <g transform="translate(300,1186)"><path d="M-78.0,-18 H78.0 A18,18 0 0 1 78.0,18 H2 L-3,30 L-11,18 H-78.0 A18,18 0 0 1 -78.0,-18 Z" fill="#FFF9F0" stroke="#2A211B" stroke-width="2.6" stroke-linejoin="round"/><text x="0" y="7" text-anchor="middle" font-size="18" font-weight="700" fill="#2A211B">今日も19時から！</text></g>
+  <g transform="translate(960,452)"><rect x="-28" y="-14" width="56" height="30" rx="5" fill="#5FA8C9"/><rect x="-31" y="-22" width="62" height="11" rx="5" fill="#FFF7EA"/><rect x="-7" y="-27" width="14" height="6" rx="3" fill="#2E5A8C"/></g>
+  <g transform="translate(690,506)"><ellipse cx="0" cy="0" rx="20" ry="12" fill="#D9A05B"/><circle cx="-19" cy="-8" r="11" fill="#D9A05B"/><path d="M-27,-15 l-4,-11 l10,5 z" fill="#B87F3E"/><circle cx="-23" cy="-9" r="2.2" fill="#2A211B"/><path d="M18,-6 q12,-6 8,-16" stroke="#D9A05B" stroke-width="6" fill="none" stroke-linecap="round"/><rect x="-12" y="9" width="6" height="12" rx="3" fill="#B87F3E"/><rect x="8" y="9" width="6" height="12" rx="3" fill="#B87F3E"/></g>
+  <g transform="translate(820,262)"><path d="M-115,0 Q0,26 115,0" stroke="#8C5A3C" stroke-width="3" fill="none"/><path d="M-119.5,0.0 l9,0 l-4.5,15 z" fill="#E87A3E"/><path d="M-81.2,7.2 l9,0 l-4.5,15 z" fill="#F5C76B"/><path d="M-42.8,11.6 l9,0 l-4.5,15 z" fill="#8FC7A8"/><path d="M-4.5,13.0 l9,0 l-4.5,15 z" fill="#5FA8C9"/><path d="M33.8,11.6 l9,0 l-4.5,15 z" fill="#E9A0A8"/><path d="M72.2,7.2 l9,0 l-4.5,15 z" fill="#FFF7EA"/><path d="M110.5,0.0 l9,0 l-4.5,15 z" fill="#E87A3E"/></g>
+  <g transform="translate(690,572)"><path d="M-42.0,-18 H42.0 A18,18 0 0 1 42.0,18 H2 L-3,30 L-11,18 H-42.0 A18,18 0 0 1 -42.0,-18 Z" fill="#FFF9F0" stroke="#2A211B" stroke-width="2.6" stroke-linejoin="round"/><text x="0" y="7" text-anchor="middle" font-size="18" font-weight="700" fill="#2A211B">花火やろう</text></g>
+  <g transform="translate(470,486)"><ellipse cx="0" cy="10" rx="40" ry="13" fill="#D9C6AC"/><g transform="translate(-22,0)"><path d="M-8,-10 h16 l-2,16 h-12 z" fill="#FFF7EA"/><rect x="-7" y="-10" width="14" height="5" fill="#8C5A3C"/></g><g transform="translate(0,0)"><path d="M-8,-10 h16 l-2,16 h-12 z" fill="#FFF7EA"/><rect x="-7" y="-10" width="14" height="5" fill="#E9A0A8"/></g><g transform="translate(22,0)"><path d="M-8,-10 h16 l-2,16 h-12 z" fill="#FFF7EA"/><rect x="-7" y="-10" width="14" height="5" fill="#F5C76B"/></g></g>
+  <g transform="translate(236,556)"><ellipse cx="0" cy="2" rx="15" ry="11" fill="#FFF7EA"/><circle cx="-13" cy="-8" r="9" fill="#FFF7EA"/><path d="M-20,-13 l-2,-9 l8,4 z M-8,-15 l4,-8 l3,8 z" fill="#FFF7EA"/><circle cx="-16" cy="-9" r="1.8" fill="#2A211B"/><circle cx="-9" cy="-9" r="1.8" fill="#2A211B"/><path d="M14,-2 q11,-4 7,-14" stroke="#FFF7EA" stroke-width="5.5" fill="none" stroke-linecap="round"/></g>
+  <g transform="translate(586,432)"><rect x="-30" y="-8" width="60" height="26" rx="5" fill="#C96A41"/><circle cx="-18" cy="22" r="10" fill="#8C5A3C"/><circle cx="18" cy="22" r="10" fill="#8C5A3C"/><g fill="#E07A86"><circle cx="-18" cy="-16" r="8"/><circle cx="-2" cy="-20" r="8"/></g><g fill="#F5C76B"><circle cx="14" cy="-16" r="8"/><circle cx="26" cy="-12" r="6"/></g><g fill="#8FC7A8"><circle cx="-26" cy="-10" r="6"/><circle cx="6" cy="-10" r="6"/></g></g>
+  <g transform="translate(352,618)"><path d="M-78.0,-18 H78.0 A18,18 0 0 1 78.0,18 H2 L-3,30 L-11,18 H-78.0 A18,18 0 0 1 -78.0,-18 Z" fill="#FFF9F0" stroke="#2A211B" stroke-width="2.6" stroke-linejoin="round"/><text x="0" y="7" text-anchor="middle" font-size="18" font-weight="700" fill="#2A211B">見学だけでもOK？</text></g>
   <!-- map-level cloud wisps -->
   <g color="#FBF3E8" opacity=".6">
     <use href="#cl-shape" transform="translate(-60,560) scale(.7)" fill="currentColor"/>
@@ -680,10 +700,10 @@ body{
 
   /* ---- スポットのカメラ座標とテキストはここで一括管理 ---- */
   var SPOTS = [
-    { id:"about",    nav:"Hoopsについて",      en:"ABOUT",    cam:{ x:-20, y:-15, scale:2.2 }, ball:{ x:0.700, y:0.826 }, bg:"#1E6B52" },
-    { id:"practice", nav:"練習場所・スケジュール", en:"PRACTICE", cam:{ x: 25, y:-10, scale:2.4 }, ball:{ x:0.330, y:0.820 }, bg:"#1E6B52" },
-    { id:"events",   nav:"1年の流れ・イベント",   en:"EVENTS",   cam:{ x:-15, y: 25, scale:2.3 }, ball:{ x:0.583, y:0.347 }, bg:"#EADAC5" },
-    { id:"women",    nav:"女子・インカレの方へ",   en:"FOR YOU",  cam:{ x: 20, y: 30, scale:2.2 }, ball:{ x:0.300, y:0.370 }, bg:"#EADAC5" }
+    { id:"about",    nav:"Hoopsについて",      en:"ABOUT",    cam:{ x:-20, y:-15, scale:3.2 }, pull:1.15, rot:-2.2, ball:{ x:0.700, y:0.826 }, bg:"#1E6B52" },
+    { id:"practice", nav:"練習場所・スケジュール", en:"PRACTICE", cam:{ x: 25, y:-10, scale:3.3 }, pull:1.35, rot: 1.9, ball:{ x:0.330, y:0.820 }, bg:"#1E6B52" },
+    { id:"events",   nav:"1年の流れ・イベント",   en:"EVENTS",   cam:{ x:-15, y: 25, scale:3.2 }, pull:1.00, rot:-2.4, ball:{ x:0.520, y:0.355 }, bg:"#EADAC5" },
+    { id:"women",    nav:"女子・インカレの方へ",   en:"FOR YOU",  cam:{ x: 20, y: 30, scale:3.1 }, pull:1.50, rot: 1.7, ball:{ x:0.300, y:0.370 }, bg:"#EADAC5" }
   ];
 
   var IG = "https://www.instagram.com/hoops_waseda/";
@@ -731,26 +751,26 @@ body{
     var rem = (1 - p) * 12 * 60;
     var mm = Math.floor(rem / 60), ss = Math.floor(rem % 60);
     bclock.textContent = mm + ":" + (ss < 10 ? "0" : "") + ss;
-    var q = p >= 0.89 ? "FINAL" : p >= 0.75 ? "Q4" : p >= 0.61 ? "Q3" : p >= 0.47 ? "Q2" : p >= 0.33 ? "Q1" : "WARM UP";
+    var q = p >= 0.90 ? "FINAL" : p >= 0.74 ? "Q4" : p >= 0.60 ? "Q3" : p >= 0.46 ? "Q2" : p >= 0.32 ? "Q1" : "WARM UP";
     if(q !== lastQ){
       lastQ = q; bq.textContent = q; bq.classList.add("pop");
       clearTimeout(popTimer); popTimer = setTimeout(function(){ bq.classList.remove("pop"); }, 340);
     }
-    board.classList.toggle("final", p >= 0.89);
+    board.classList.toggle("final", p >= 0.90);
     bmem.textContent = pad3(Math.round(Math.max(0, Math.min(1, (p - 0.26) / 0.62)) * 180));
   }
   paintBoard(0);
 
   gsap.registerPlugin(ScrollTrigger);
-  gsap.set("#cam", { scale:1.5, transformOrigin:"50% 50%" });
-  gsap.set("#map", { xPercent:-6, yPercent:8, transformOrigin:"50% 50%" });
+  gsap.set("#cam", { scale:2.4, rotation:1.5, transformOrigin:"50% 50%" });
+  gsap.set("#map", { xPercent:-16, yPercent:12, transformOrigin:"50% 50%" });
   gsap.set("#ovCatch, #ovNews, .spot, #ovOutro", { autoAlpha:0 });
 
   var tl = gsap.timeline({
     defaults:{ ease:"none" },
     scrollTrigger:{
       trigger:"#scroll", start:"top top", end:"bottom bottom",
-      scrub: reduce ? true : 1, invalidateOnRefresh: true,
+      scrub: reduce ? true : 0.65, invalidateOnRefresh: true,
       onUpdate: function(self){ railFill.style.width = (self.progress*100).toFixed(2) + "%"; paintBoard(self.progress); }
     }
   });
@@ -765,67 +785,77 @@ body{
   /* 15–25% ピックアップNEWS＋雲が晴れる */
   tl.fromTo("#ovNews", { autoAlpha:0, y:38, scale:0.94 }, { autoAlpha:1, y:0, scale:1, duration:2.5, ease:"back.out(1.4)" }, 17.5);
   tl.to("#ovNews", { autoAlpha:0, y:-24, duration:2, ease:"power2.in" }, 24);
-  tl.to("#intro .cl.a", { xPercent:-72, yPercent:-62, duration:11, ease:"power1.in" }, 19);
-  tl.to("#intro .cl.b", { xPercent: 78, yPercent:-56, duration:11, ease:"power1.in" }, 19);
-  tl.to("#intro .cl.c", { xPercent:-82, yPercent: 66, duration:11, ease:"power1.in" }, 19);
-  tl.to("#intro .cl.d", { xPercent: 86, yPercent: 62, duration:11, ease:"power1.in" }, 19);
+  tl.to("#intro .cl.a", { xPercent:-108, yPercent:-96, duration:11, ease:"power2.in" }, 19);
+  tl.to("#intro .cl.b", { xPercent: 118, yPercent:-88, duration:11, ease:"power2.in" }, 19);
+  tl.to("#intro .cl.c", { xPercent:-124, yPercent:102, duration:11, ease:"power2.in" }, 19);
+  tl.to("#intro .cl.d", { xPercent: 130, yPercent: 96, duration:11, ease:"power2.in" }, 19);
   tl.to("#intro .fill", { autoAlpha:0, duration:8 }, 19);
   tl.to("#intro .cl", { autoAlpha:0, duration:4 }, 26);
   tl.to("#gameBall", { autoAlpha:1, duration:3 }, 22);
-  tl.to("#cam", { scale:1, duration:12, ease:"power1.inOut" }, 19);
-  tl.to("#map", { xPercent:0, yPercent:0, duration:12, ease:"power1.inOut" }, 19);
+  tl.to("#cam", { scale:1, rotation:0, duration:11, ease:"power2.inOut" }, 19);
+  tl.to("#map", { xPercent:0, yPercent:0, duration:11, ease:"power2.inOut" }, 19);
 
   /* 25–85% マップ探索 */
   SPOTS.forEach(function(s, i){
-    var t = 33 + i*14;
-    tl.to("#cam", { scale:s.cam.scale, duration:8, ease:"power2.inOut" }, t);
-    tl.to("#map", { xPercent:s.cam.x, yPercent:s.cam.y, duration:8, ease:"power2.inOut" }, t);
-    tl.to(stage, { backgroundColor:s.bg, duration:6, ease:"power1.inOut" }, t);
-    tl.fromTo("#spot"+i, { autoAlpha:0, x:-36, rotate:-1.6 },
-                          { autoAlpha:1, x:0, rotate:0, duration:2.4, ease:"power3.out" }, t+5.8);
+    var t = 32 + i*14;
+    var from = i === 0 ? { x:0, y:0 } : SPOTS[i-1].cam;
+    /* 経由点：いったん俯瞰まで引き、中間地点を横切ってから寄る */
+    var vx = (from.x + s.cam.x) / 2 * 0.4, vy = (from.y + s.cam.y) / 2 * 0.4;
+
+    tl.to("#cam", { scale:s.pull, rotation:s.rot, duration:4.6, ease:"power2.inOut" }, t);
+    tl.to("#map", { xPercent:vx, yPercent:vy, duration:4.6, ease:"power2.inOut" }, t);
+    tl.to("#cam", { scale:s.cam.scale, duration:4.8, ease:"back.out(1.15)" }, t+4.6);
+    tl.to("#cam", { rotation:0, duration:4.8, ease:"power2.out" }, t+4.6);
+    tl.to("#map", { xPercent:s.cam.x, yPercent:s.cam.y, duration:4.8, ease:"power2.inOut" }, t+4.6);
+    tl.to(stage, { backgroundColor:s.bg, duration:6, ease:"power1.inOut" }, t+1);
+
+    tl.fromTo("#spot"+i, { autoAlpha:0, x:-40, rotate:-1.8 },
+                          { autoAlpha:1, x:0, rotate:0, duration:2.2, ease:"power3.out" }, t+8.3);
     tl.fromTo("#spot"+i+" > *", { autoAlpha:0, y:18 },
-                                { autoAlpha:1, y:0, duration:1.5, stagger:0.4, ease:"power2.out" }, t+6.4);
-    tl.to("#spot"+i, { autoAlpha:0, x:30, rotate:1.4, duration:2, ease:"power2.in" }, t+11.5);
+                                { autoAlpha:1, y:0, duration:1.3, stagger:0.34, ease:"power2.out" }, t+8.9);
+    tl.to("#spot"+i, { autoAlpha:0, x:34, rotate:1.6, duration:1.9, ease:"power2.in" }, t+12.1);
 
     /* ボールがマップ上を転がって次のスポットへ */
     var prev = i === 0 ? { x:0.5, y:0.505 } : SPOTS[i-1].ball;
     var dx = s.ball.x - prev.x, dy = s.ball.y - prev.y;
-    var spin = Math.round(Math.sqrt(dx*dx + dy*dy) * 1700) * (dx < 0 ? -1 : 1);
+    var spin = Math.round(Math.sqrt(dx*dx + dy*dy) * 2100) * (dx < 0 ? -1 : 1);
     tl.to("#gameBall", {
       x: function(){ return ballX(s.ball.x); }, y: function(){ return ballY(s.ball.y); }, rotation: "+=" + spin,
-      duration:8, ease:"power2.inOut"
+      duration:9.4, ease:"power2.inOut"
     }, t);
-    tl.fromTo("#ballRing", { scale:0.35, opacity:0.95 }, { scale:2.1, opacity:0, duration:2.2, ease:"power2.out" }, t+7.2);
+    tl.to("#gameBall", { scale:1.5, duration:4.6, ease:"power2.out" }, t);
+    tl.to("#gameBall", { scale:1, duration:4.8, ease:"power2.in" }, t+4.6);
+    tl.fromTo("#ballRing", { scale:0.3, opacity:0.95 }, { scale:2.3, opacity:0, duration:2.2, ease:"power2.out" }, t+8.6);
 
-    /* カメラがドリブルのように小さく弾む */
-    if(!reduce) tl.to("#map", { y:-7, duration:0.7, repeat:9, yoyo:true, ease:"power1.inOut" }, t+0.5);
+    /* 引いているあいだカメラがドリブルのように弾む */
+    if(!reduce) tl.to("#map", { y:-11, duration:0.62, repeat:13, yoyo:true, ease:"power1.inOut" }, t+0.4);
   });
 
   /* 85–100% アウトロ */
-  tl.to("#gameBall", { x:function(){ return ballX(0.5); }, y:function(){ return ballY(0.47); }, rotation:"+=620", duration:9, ease:"power2.inOut" }, 86);
-  tl.to("#gameBall", { autoAlpha:0, duration:3 }, 90);
-  tl.to("#cam", { scale:0.95, duration:9, ease:"power2.inOut" }, 86);
-  tl.to("#map", { xPercent:0, yPercent:0, duration:9, ease:"power2.inOut" }, 86);
-  tl.to(stage, { backgroundColor:"#F7E2B4", duration:7, ease:"power1.inOut" }, 87);
-  [["a",-84,-72],["b",82,-66],["c",-88,74],["d",90,68]].forEach(function(c){
+  tl.to("#gameBall", { x:function(){ return ballX(0.5); }, y:function(){ return ballY(0.47); }, rotation:"+=900", duration:8, ease:"power2.inOut" }, 88);
+  tl.to("#gameBall", { autoAlpha:0, duration:3 }, 92);
+  tl.to("#cam", { scale:0.95, rotation:-1.2, duration:8, ease:"power2.inOut" }, 88);
+  tl.to("#map", { xPercent:0, yPercent:0, duration:8, ease:"power2.inOut" }, 88);
+  tl.to(stage, { backgroundColor:"#F7E2B4", duration:7, ease:"power1.inOut" }, 89);
+  [["a",-126,-108],["b",124,-99],["c",-132,111],["d",135,102]].forEach(function(c){
     tl.fromTo("#outro .cl."+c[0],
       { xPercent:c[1], yPercent:c[2], autoAlpha:0 },
-      { xPercent:0, yPercent:0, autoAlpha:1, duration:7, ease:"power2.out" }, 89);
+      { xPercent:0, yPercent:0, autoAlpha:1, duration:7, ease:"power2.out" }, 90);
   });
-  tl.to("#outro .fill", { autoAlpha:1, duration:5 }, 90);
-  tl.fromTo("#ovOutro", { autoAlpha:0, y:36 }, { autoAlpha:1, y:0, duration:3, ease:"power2.out" }, 93);
-  tl.fromTo("#ovOutro .cta", { autoAlpha:0, y:26 }, { autoAlpha:1, y:0, duration:1.6, stagger:0.55, ease:"back.out(1.5)" }, 94.5);
+  tl.to("#outro .fill", { autoAlpha:1, duration:5 }, 91);
+  tl.fromTo("#ovOutro", { autoAlpha:0, y:36 }, { autoAlpha:1, y:0, duration:3, ease:"power2.out" }, 94);
+  tl.fromTo("#ovOutro .cta", { autoAlpha:0, y:26 }, { autoAlpha:1, y:0, duration:1.6, stagger:0.5, ease:"back.out(1.5)" }, 95.4);
 
   /* パララックス（雲レイヤー） */
   if(!reduce){
-    tl.to(".dc.d1", { xPercent:125, duration:100 }, 0);
-    tl.to(".dc.d2", { xPercent:-135, duration:100 }, 0);
-    tl.to(".dc.d3", { xPercent:115, duration:100 }, 0);
-    tl.to(".dc.d4", { xPercent:-95, duration:100 }, 0);
+    tl.to(".dc.d1", { xPercent:300, yPercent:-40, duration:100 }, 0);
+    tl.to(".dc.d2", { xPercent:-330, yPercent:55, duration:100 }, 0);
+    tl.to(".dc.d3", { xPercent:270, yPercent:-60, duration:100 }, 0);
+    tl.to(".dc.d4", { xPercent:-240, yPercent:38, duration:100 }, 0);
   }
 
   /* ---------- スクロール誘導 ---------- */
-  var FOCUS = [0.04, 0.205, 0.405, 0.545, 0.685, 0.825, 0.965];
+  var FOCUS = [0.04, 0.205, 0.42, 0.56, 0.70, 0.84, 0.97];
   function maxScroll(){ return document.documentElement.scrollHeight - window.innerHeight; }
   function goTo(p){
     window.scrollTo({ top: maxScroll()*p, behavior: reduce ? "auto" : "smooth" });
