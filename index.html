@@ -1,0 +1,793 @@
+<title>Hoops 早稲田マップ</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Zen+Maru+Gothic:wght@400;500;700;900&display=swap">
+<style>
+/* Layout concept: one fixed full-bleed canvas (illustrated map) driven by a scroll timeline;
+   all reading UI floats above it as corner HUD + a single centred overlay slot. */
+:root{
+  --cream:#F4E9DC; --cream-2:#EADAC5; --cream-3:#FBF3E8;
+  --green:#1E6B52; --green-2:#17543F; --green-3:#2F8A66;
+  --terra:#E87A3E; --mustard:#F5C76B; --sky:#9AD7E8;
+  --ink:#2A211B; --ink-2:#5E4C3E; --paper:#FFF9F0;
+  --font-display:"Zen Maru Gothic","Hiragino Maru Gothic ProN","ヒラギノ丸ゴ ProN W4",system-ui,sans-serif;
+  color-scheme:light;
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{
+  margin:0; font-family:var(--font-display); color:var(--ink);
+  background:var(--cream); -webkit-font-smoothing:antialiased;
+}
+@media (prefers-reduced-motion:reduce){html{scroll-behavior:auto}}
+
+/* ---------- scroll driver ---------- */
+#scroll{height:820vh}
+
+/* ---------- fixed canvas ---------- */
+#stage{
+  position:fixed; inset:0; overflow:hidden;
+  background:var(--cream); z-index:0;
+  display:grid; place-items:center;
+}
+#cam{width:100%;height:100%;display:grid;place-items:center;will-change:transform}
+#map{
+  width:min(106vw,78vh); aspect-ratio:4/5; position:relative;
+  will-change:transform; transform-origin:center center;
+}
+#map svg{display:block;width:100%;height:100%;position:relative;z-index:1}
+/* the land continues past the map box so there is never a letterbox band */
+#map .bleed{position:absolute;left:-130%;right:-130%;z-index:0;pointer-events:none}
+#map .bleed.mid{top:0;bottom:0;background:linear-gradient(to bottom,
+  #F4E9DC 0%,#F4E9DC 41%,#7FC9DF 41%,#7FC9DF 46.5%,
+  #1E6B52 46.5%,#1E6B52 78%,#17543F 78%,#17543F 84%,#1E6B52 84%,#1E6B52 100%)}
+#map .bleed.top{bottom:100%;height:160%;background:#F4E9DC}
+#map .bleed.bot{top:100%;height:160%;background:#1E6B52}
+
+/* ---------- drifting decor clouds ---------- */
+#drift{position:fixed;inset:0;z-index:2;pointer-events:none;overflow:hidden}
+#drift .dc{position:absolute;color:var(--cream-3);opacity:.55}
+#drift .dc svg{display:block}
+.dc.d1{top:4%;left:-18%;width:46vw}
+.dc.d2{top:26%;right:-24%;width:54vw;color:var(--cream-2);opacity:.4}
+.dc.d3{bottom:12%;left:-26%;width:62vw;opacity:.42}
+.dc.d4{bottom:-6%;right:-14%;width:40vw;opacity:.5}
+
+/* ---------- intro / outro cloud curtains ---------- */
+.curtain{position:fixed;inset:0;z-index:5;pointer-events:none;overflow:hidden}
+.curtain .fill{position:absolute;inset:-2px}
+#intro .fill{background:var(--cream)}
+#outro .fill{background:#F7E2B4;opacity:0}
+.curtain .cl{position:absolute;display:block}
+#intro .cl{color:var(--cream-2)}
+#outro .cl{color:var(--mustard)}
+.cl.a{top:-14%;left:-18%;width:92vw}
+.cl.b{top:-6%;right:-22%;width:86vw}
+.cl.c{bottom:-12%;left:-24%;width:98vw}
+.cl.d{bottom:-18%;right:-18%;width:88vw}
+#outro{z-index:6}
+#outro .cl{opacity:0}
+
+/* ---------- centred overlay slot ---------- */
+#slot{
+  position:fixed; inset:0; z-index:8; display:grid; place-items:center;
+  padding-left:max(16px,env(safe-area-inset-left,0px));
+  padding-right:max(16px,env(safe-area-inset-right,0px));
+  padding-block:calc(84px + env(safe-area-inset-top,0px)) calc(96px + env(safe-area-inset-bottom,0px));
+  pointer-events:none;
+}
+#slot > *{grid-area:1/1;width:100%;max-width:560px;pointer-events:none}
+#slot button,#slot a{pointer-events:auto}
+
+/* intro type */
+.intro-logo{text-align:center}
+.intro-logo .mark{
+  font-weight:900;font-size:clamp(3.2rem,16vw,6.5rem);letter-spacing:.02em;line-height:.95;
+  color:var(--ink);
+}
+.intro-logo .mark em{font-style:normal;color:var(--terra)}
+.intro-logo .sub{
+  margin-top:1.1rem;font-weight:700;font-size:clamp(.82rem,3.4vw,1rem);
+  letter-spacing:.22em;color:var(--ink-2);
+}
+.intro-logo .rule{width:48px;height:4px;border-radius:2px;background:var(--terra);margin:1.4rem auto 0}
+
+.catch{text-align:left;padding-inline:4px;opacity:0;visibility:hidden}
+.catch p{
+  margin:0;font-weight:700;line-height:2.05;
+  font-size:clamp(1.18rem,5.6vw,1.9rem);letter-spacing:.02em;
+}
+.catch p + p{margin-top:1.6rem}
+.catch .from{font-size:clamp(1rem,4.4vw,1.45rem);color:var(--ink-2)}
+
+/* news card */
+.news{background:var(--paper);border-radius:22px;padding:22px 20px 20px;
+  box-shadow:0 18px 40px rgba(42,33,27,.18);opacity:0;visibility:hidden}
+.tag{display:inline-block;background:var(--ink);color:var(--cream-3);
+  font-size:.7rem;font-weight:700;letter-spacing:.14em;padding:5px 11px;border-radius:999px}
+.news h2{margin:.85rem 0 0;font-size:clamp(1.02rem,4.4vw,1.3rem);line-height:1.75;font-weight:700;text-wrap:balance}
+.pill{display:inline-flex;align-items:center;gap:.5em;margin-top:1.1rem;
+  background:var(--ink);color:var(--cream-3);border:0;cursor:pointer;
+  font-family:inherit;font-weight:700;font-size:.95rem;letter-spacing:.08em;
+  padding:13px 30px;border-radius:999px;transition:transform .18s ease,background .18s ease}
+.pill:hover{transform:translateY(-2px);background:#3d2f26}
+.pill:focus-visible{outline:3px solid var(--terra);outline-offset:3px}
+
+/* spot overlay */
+.spot{align-self:start;background:rgba(255,249,240,.94);backdrop-filter:blur(3px);
+  border-radius:20px;padding:20px 18px 18px;box-shadow:0 16px 36px rgba(20,40,30,.22);opacity:0;visibility:hidden}
+.spot h2{margin:.8rem 0 0;font-size:clamp(1.02rem,4.5vw,1.35rem);line-height:1.7;font-weight:700;text-wrap:balance}
+.spot p{margin:.7rem 0 0;font-size:clamp(.84rem,3.5vw,.98rem);line-height:1.95;color:var(--ink-2)}
+.spot .pill{padding:11px 24px;font-size:.88rem}
+
+/* outro CTA */
+.outro-cta{text-align:center;opacity:0;visibility:hidden}
+.outro-cta .lead{font-weight:700;font-size:clamp(1.05rem,4.6vw,1.5rem);line-height:1.95;margin:0}
+.outro-cta .turn{margin:.9rem 0 0;font-weight:900;letter-spacing:.06em;
+  font-size:clamp(1.25rem,6vw,2.1rem);color:var(--terra);line-height:1.3}
+.cta-list{display:flex;flex-direction:column;gap:12px;margin-top:1.8rem;align-items:center}
+.cta{display:inline-flex;align-items:center;gap:.7em;width:min(100%,330px);justify-content:center;
+  background:var(--ink);color:var(--cream-3);border:0;cursor:pointer;text-decoration:none;
+  font-family:inherit;font-weight:700;font-size:.95rem;padding:15px 22px;border-radius:999px;
+  transition:transform .18s ease,background .18s ease}
+.cta:hover{transform:translateY(-2px);background:#3d2f26}
+.cta:focus-visible{outline:3px solid var(--terra);outline-offset:3px}
+.cta svg{flex:none}
+.outro-cta .foot{margin:1.4rem 0 0;font-size:.76rem;letter-spacing:.1em;color:var(--ink-2)}
+
+/* ---------- HUD ---------- */
+@media (min-width:860px){
+  #slot{justify-items:center}
+  #slot > .spot{width:min(100%,440px);justify-self:start;align-self:center}
+  #slot > .news{width:min(100%,480px)}
+}
+.hud{position:fixed;z-index:20}
+.hud-tl{top:0;left:0;padding-top:calc(16px + env(safe-area-inset-top,0px));
+  padding-left:max(16px,env(safe-area-inset-left,0px))}
+.logo-mini{font-weight:900;font-size:1.22rem;line-height:1.05;letter-spacing:.01em;color:var(--ink)}
+.logo-mini span{display:block;font-size:.56rem;font-weight:700;letter-spacing:.2em;color:var(--ink-2);margin-top:5px}
+.hud-tr{top:0;right:0;padding-top:calc(16px + env(safe-area-inset-top,0px));
+  padding-right:max(16px,env(safe-area-inset-right,0px));
+  display:flex;flex-direction:column;gap:10px;align-items:center}
+.hud-br{bottom:0;right:0;padding-bottom:calc(18px + env(safe-area-inset-bottom,0px));
+  padding-right:max(16px,env(safe-area-inset-right,0px))}
+.rbtn{width:52px;height:52px;border-radius:50%;border:0;cursor:pointer;background:var(--ink);
+  color:var(--cream-3);display:grid;place-items:center;padding:0;
+  box-shadow:0 8px 20px rgba(42,33,27,.26);transition:transform .18s ease}
+.rbtn:hover{transform:scale(1.07)}
+.rbtn:focus-visible{outline:3px solid var(--terra);outline-offset:3px}
+.rbtn.ball{width:44px;height:44px;background:var(--terra)}
+#scrollBtn svg{animation:bob 1.9s ease-in-out infinite}
+@keyframes bob{0%,100%{transform:translateY(-2px)}50%{transform:translateY(3px)}}
+@media (prefers-reduced-motion:reduce){#scrollBtn svg{animation:none}}
+
+/* progress rail */
+#rail{position:fixed;left:0;right:0;top:0;height:4px;z-index:21;background:rgba(42,33,27,.1)}
+#rail i{display:block;height:100%;width:0;background:var(--terra)}
+
+/* ---------- panels ---------- */
+.sheet[hidden]{display:none}
+.sheet{position:fixed;inset:0;z-index:40;display:grid;place-items:center;
+  padding-left:max(16px,env(safe-area-inset-left,0px));
+  padding-right:max(16px,env(safe-area-inset-right,0px));
+  padding-block:calc(24px + env(safe-area-inset-top,0px)) calc(24px + env(safe-area-inset-bottom,0px))}
+.sheet .scrim{position:absolute;inset:0;background:rgba(30,22,16,.55);border:0;cursor:pointer}
+.sheet .body{position:relative;background:var(--paper);border-radius:24px;width:100%;max-width:520px;
+  max-height:100%;overflow-y:auto;padding:26px 22px 24px;box-shadow:0 26px 60px rgba(20,14,8,.4)}
+.sheet h3{margin:.9rem 0 0;font-size:1.22rem;line-height:1.7;text-wrap:balance}
+.sheet p{margin:.9rem 0 0;line-height:2;font-size:.92rem;color:var(--ink-2)}
+.sheet dl{margin:1.2rem 0 0;display:grid;grid-template-columns:auto 1fr;gap:10px 16px;font-size:.88rem}
+.sheet dt{font-weight:700;color:var(--ink);white-space:nowrap}
+.sheet dd{margin:0;color:var(--ink-2);min-width:0}
+.sheet .close{position:absolute;top:12px;right:12px;width:38px;height:38px;border-radius:50%;
+  border:0;background:var(--cream-2);color:var(--ink);cursor:pointer;font-size:1.1rem;line-height:1}
+.sheet .close:focus-visible{outline:3px solid var(--terra);outline-offset:2px}
+.navlist{list-style:none;margin:1.4rem 0 0;padding:0;display:flex;flex-direction:column;gap:2px}
+.navlist button{width:100%;text-align:left;background:none;border:0;cursor:pointer;font-family:inherit;
+  color:var(--ink);padding:15px 6px;font-size:1.05rem;font-weight:700;
+  border-bottom:1px dashed var(--cream-2);display:flex;justify-content:space-between;align-items:center;gap:12px}
+.navlist button:hover{color:var(--terra)}
+.navlist button:focus-visible{outline:3px solid var(--terra);outline-offset:2px}
+.navlist small{font-weight:500;font-size:.68rem;letter-spacing:.14em;color:var(--ink-2)}
+.handle{display:flex;align-items:center;gap:10px;margin-top:1.2rem;background:var(--cream);
+  border-radius:14px;padding:12px 14px;font-weight:700;justify-content:space-between;flex-wrap:wrap}
+.handle code{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:.95rem;user-select:all}
+.handle button{border:0;background:var(--ink);color:var(--cream-3);font-family:inherit;font-weight:700;
+  font-size:.78rem;padding:8px 14px;border-radius:999px;cursor:pointer}
+.sheet .cta{margin-top:1.3rem;width:100%}
+.hintline{margin-top:1.1rem;font-size:.74rem;letter-spacing:.06em;color:var(--ink-2)}
+</style>
+
+<!-- ===== shared symbols ===== -->
+<svg id="defs" aria-hidden="true" style="position:absolute;width:0;height:0;overflow:hidden">
+  <defs>
+    <!-- cloud blob -->
+    <g id="cl-shape">
+      <circle cx="46" cy="44" r="40"/><circle cx="112" cy="30" r="52"/>
+      <circle cx="186" cy="48" r="38"/><circle cx="240" cy="58" r="28"/>
+      <rect x="6" y="46" width="252" height="42" rx="21"/>
+    </g>
+    <!-- people -->
+    <g id="p1"><rect x="-9" y="13" width="7" height="21" rx="3.5" fill="#3B2B23"/><rect x="2" y="13" width="7" height="21" rx="3.5" fill="#3B2B23"/><rect x="-19" y="-7" width="38" height="26" rx="10" fill="currentColor"/><circle cx="0" cy="-19" r="12.5" fill="#F3C9A5"/><path d="M-12.5,-21a12.5,12.5 0 0 1 25,0a14,9 0 0 0 -25,0z" fill="#3B2B23"/></g>
+    <g id="p2"><rect x="-9" y="13" width="7" height="21" rx="3.5" fill="#4A3228"/><rect x="2" y="13" width="7" height="21" rx="3.5" fill="#4A3228"/><rect x="-19" y="-7" width="38" height="26" rx="10" fill="currentColor"/><path d="M-15,-14h30v18h-30z" fill="#4A3228"/><circle cx="0" cy="-19" r="12.5" fill="#F7D6B4"/><path d="M-13,-21a13,13 0 0 1 26,0a15,10 0 0 0 -26,0z" fill="#4A3228"/></g>
+    <g id="p3"><rect x="-9" y="13" width="7" height="21" rx="3.5" fill="#3B2B23"/><rect x="2" y="13" width="7" height="21" rx="3.5" fill="#3B2B23"/><rect x="-19" y="-7" width="38" height="26" rx="10" fill="currentColor"/><circle cx="0" cy="-19" r="12.5" fill="#EFBD93"/><circle cx="0" cy="-34" r="7" fill="#2F2019"/><path d="M-12.5,-21a12.5,12.5 0 0 1 25,0a14,9 0 0 0 -25,0z" fill="#2F2019"/></g>
+    <g id="p4"><rect x="-9" y="13" width="7" height="21" rx="3.5" fill="#3B2B23"/><rect x="2" y="13" width="7" height="21" rx="3.5" fill="#3B2B23"/><rect x="-19" y="-7" width="38" height="26" rx="10" fill="currentColor"/><circle cx="0" cy="-19" r="12.5" fill="#E9B98E"/><path d="M-13,-22a13,13 0 0 1 26,0z" fill="#D9543C"/><path d="M-13,-22h20a5,3 0 0 1 0,6h-20z" fill="#C2402C"/></g>
+    <!-- player holding a ball -->
+    <g id="pl"><rect x="-9" y="13" width="7" height="21" rx="3.5" fill="#E8E0D2"/><rect x="2" y="13" width="7" height="21" rx="3.5" fill="#E8E0D2"/><rect x="-18" y="-7" width="36" height="25" rx="9" fill="currentColor"/><circle cx="22" cy="2" r="11" fill="#E87A3E"/><path d="M11,2h22M22,-9v22" stroke="#9C4A1E" stroke-width="1.6"/><circle cx="0" cy="-19" r="12" fill="#F3C9A5"/><path d="M-12,-21a12,12 0 0 1 24,0a13,9 0 0 0 -24,0z" fill="#3B2B23"/></g>
+    <!-- tiny crowd figure -->
+    <g id="tiny"><circle cx="0" cy="-9" r="5.5" fill="#F3C9A5"/><path d="M-5.5,-11a5.5,5.5 0 0 1 11,0z" fill="#3B2B23"/><rect x="-7" y="-3" width="14" height="16" rx="6" fill="currentColor"/></g>
+    <!-- trees -->
+    <g id="tr1"><rect x="-4.5" y="4" width="9" height="22" rx="4" fill="#7A5433"/><circle cx="0" cy="-8" r="19" fill="#2F8A66"/><circle cx="-14" cy="2" r="13" fill="#3EA17B"/><circle cx="14" cy="1" r="12" fill="#24745A"/></g>
+    <g id="tr2"><rect x="-4" y="6" width="8" height="20" rx="4" fill="#7A5433"/><path d="M0,-30 L17,2 H-17 Z" fill="#2B8162"/><path d="M0,-16 L21,14 H-21 Z" fill="#35966F"/></g>
+    <g id="tr3"><rect x="-4" y="4" width="8" height="20" rx="4" fill="#8A6038"/><circle cx="0" cy="-10" r="17" fill="#E8A24A"/><circle cx="-12" cy="0" r="11" fill="#F0B861"/><circle cx="12" cy="-1" r="10" fill="#D98C38"/></g>
+    <!-- basketball -->
+    <g id="ball"><circle cx="0" cy="0" r="16" fill="#E87A3E"/><path d="M-16,0h32M0,-16v32M-11,-11a22,22 0 0 0 22,22M11,-11a22,22 0 0 1 -22,22" stroke="#9C4A1E" stroke-width="2" fill="none"/></g>
+    <!-- hoop -->
+    <g id="hoop"><rect x="-2.5" y="-4" width="5" height="38" rx="2.5" fill="#5C4A3D"/><rect x="-17" y="-32" width="34" height="24" rx="4" fill="#FFF7EA" stroke="#5C4A3D" stroke-width="2.5"/><rect x="-7" y="-24" width="14" height="11" fill="none" stroke="#E87A3E" stroke-width="2.5"/><path d="M-9,-8h18l-3,10h-12z" fill="none" stroke="#E87A3E" stroke-width="2.5"/></g>
+    <!-- tent -->
+    <g id="tent"><path d="M0,-34 L34,20 H-34 Z" fill="currentColor"/><path d="M0,-34 L10,20 H-10 Z" fill="#FFF3DF"/><path d="M0,-34 L34,20 H-34 Z" fill="none" stroke="rgba(0,0,0,.12)" stroke-width="2"/></g>
+  </defs>
+</svg>
+
+<!-- ===== fixed canvas ===== -->
+<div id="stage" aria-hidden="true">
+  <div id="cam">
+    <div id="map">
+<div class="bleed top"></div><div class="bleed mid"></div><div class="bleed bot"></div>
+<svg viewBox="0 0 1200 1500" preserveAspectRatio="xMidYMid meet" font-family="Zen Maru Gothic, sans-serif">
+  <!-- ===== ground ===== -->
+  <rect width="1200" height="1500" fill="#F4E9DC"/>
+  <ellipse cx="240" cy="120" rx="300" ry="150" fill="#EFE0CE" opacity=".7"/>
+  <ellipse cx="1000" cy="90" rx="280" ry="130" fill="#EFE0CE" opacity=".55"/>
+  <path d="M0,700 C140,658 262,744 400,706 C540,668 662,750 800,710 C930,673 1070,742 1200,700 L1200,1500 L0,1500 Z" fill="#1E6B52"/>
+  <path d="M0,790 C180,758 320,828 480,796 C640,764 800,832 960,800 C1072,778 1140,816 1200,800 L1200,880 L0,880 Z" fill="#24775C" opacity=".6"/>
+  <path d="M0,1180 C200,1150 380,1212 560,1182 C740,1152 920,1214 1200,1178 L1200,1260 L0,1260 Z" fill="#17543F" opacity=".5"/>
+
+  <!-- ===== river + bridge ===== -->
+  <path d="M-40,640 C160,598 300,690 470,654 C640,618 760,706 930,666 C1060,636 1152,678 1244,654" fill="none" stroke="#7FC9DF" stroke-width="52" stroke-linecap="round"/>
+  <path d="M-40,640 C160,598 300,690 470,654 C640,618 760,706 930,666 C1060,636 1152,678 1244,654" fill="none" stroke="#B6E4F1" stroke-width="24" stroke-linecap="round" opacity=".85"/>
+  <path d="M120,628 q22,-9 44,2 M330,678 q22,-10 44,2 M700,690 q22,-10 44,2 M1010,650 q22,-9 44,2" stroke="#FFFFFF" stroke-width="4" fill="none" opacity=".7" stroke-linecap="round"/>
+  <g transform="translate(596,660)">
+    <rect x="-30" y="-52" width="60" height="104" rx="7" fill="#E8956A"/>
+    <rect x="-38" y="-58" width="76" height="10" rx="5" fill="#D07048"/>
+    <rect x="-38" y="48" width="76" height="10" rx="5" fill="#D07048"/>
+    <path d="M-20,-46 v92 M0,-46 v92 M20,-46 v92" stroke="#D07048" stroke-width="3"/>
+  </g>
+  <text x="596" y="742" text-anchor="middle" font-size="19" font-weight="700" fill="#15503C">神田川ブリッジ</text>
+
+  <!-- ===== UPPER LEFT : campus & cafe (spot 4) ===== -->
+  <g transform="translate(316,330)">
+    <rect x="-118" y="-56" width="192" height="122" rx="8" fill="#C96A41"/>
+    <path d="M-126,-56 L-22,-110 L82,-56 Z" fill="#2F8A66"/>
+    <g fill="#FFF3DF">
+      <rect x="-100" y="-34" width="26" height="36" rx="4"/><rect x="-62" y="-34" width="26" height="36" rx="4"/>
+      <rect x="-24" y="-34" width="26" height="36" rx="4"/><rect x="14" y="-34" width="26" height="36" rx="4"/>
+      <rect x="-100" y="18" width="26" height="30" rx="4"/><rect x="-62" y="18" width="26" height="30" rx="4"/>
+      <rect x="-6" y="14" width="46" height="52" rx="22"/>
+    </g>
+    <rect x="60" y="-178" width="68" height="244" rx="5" fill="#D4784E"/>
+    <path d="M52,-178 L94,-224 L136,-178 Z" fill="#2F8A66"/>
+    <circle cx="94" cy="-146" r="23" fill="#FFF7EA" stroke="#8C4C2C" stroke-width="3"/>
+    <path d="M94,-146 v-14 M94,-146 l11,6" stroke="#4A3228" stroke-width="3.5" stroke-linecap="round"/>
+    <g fill="#FFF3DF"><rect x="74" y="-100" width="40" height="26" rx="4"/><rect x="74" y="-56" width="40" height="26" rx="4"/><rect x="74" y="-12" width="40" height="26" rx="4"/></g>
+  </g>
+  <rect x="126" y="154" width="214" height="44" rx="10" fill="#FFF7EA" stroke="#C96A41" stroke-width="3"/>
+  <text x="233" y="184" text-anchor="middle" font-size="24" font-weight="700" fill="#A8532C">早稲田キャンパス</text>
+
+  <!-- cafe -->
+  <g transform="translate(492,430)">
+    <rect x="-74" y="-54" width="148" height="86" rx="8" fill="#FBF3E8"/>
+    <rect x="-82" y="-66" width="164" height="18" rx="9" fill="#E9A0A8"/>
+    <path d="M-82,-48 h164 v8 a10,10 0 0 1 -10,10 h-144 a10,10 0 0 1 -10,-10 z" fill="#F6C9CD"/>
+    <rect x="-52" y="-34" width="48" height="40" rx="5" fill="#CFE9DE"/>
+    <rect x="12" y="-34" width="50" height="66" rx="5" fill="#8C5A3C"/>
+    <text x="0" y="-58" text-anchor="middle" font-size="13" font-weight="700" fill="#FFF7EA">CAFE</text>
+  </g>
+  <g transform="translate(590,498)">
+    <rect x="-34" y="-4" width="68" height="9" rx="4.5" fill="#E8956A"/>
+    <rect x="-4" y="2" width="8" height="26" rx="4" fill="#C97047"/>
+    <path d="M-44,-6 L0,-44 L44,-6 Z" fill="#F5C76B"/><path d="M-44,-6 L0,-44 L0,-6 Z" fill="#E8B04C"/>
+  </g>
+  <use href="#p2" transform="translate(552,528) scale(.9)" color="#E9A0A8"/>
+  <use href="#p3" transform="translate(632,526) scale(.88)" color="#7FA8D8"/>
+  <use href="#p1" transform="translate(420,512) scale(.86)" color="#F5C76B"/>
+  <use href="#p4" transform="translate(206,500) scale(.9)" color="#E87A3E"/>
+  <use href="#p2" transform="translate(262,516) scale(.84)" color="#8FC7A8"/>
+  <g>
+    <use href="#tr3" transform="translate(120,430) scale(1.1)"/>
+    <use href="#tr1" transform="translate(660,380) scale(1)"/>
+    <use href="#tr3" transform="translate(96,286) scale(.85)"/>
+    <use href="#tr1" transform="translate(556,268) scale(.8)"/>
+  </g>
+  <g fill="#E07A86"><circle cx="160" cy="548" r="7"/><circle cx="182" cy="560" r="6"/><circle cx="140" cy="564" r="6"/></g>
+  <g fill="#F5C76B"><circle cx="700" cy="534" r="7"/><circle cx="722" cy="546" r="6"/><circle cx="680" cy="548" r="6"/></g>
+
+  <!-- ===== UPPER RIGHT : camp & events (spot 3) ===== -->
+  <path d="M640,268 L730,150 L812,268 Z" fill="#CFC0A8"/>
+  <path d="M770,268 L876,128 L982,268 Z" fill="#BCAB92"/>
+  <path d="M876,128 L908,170 L844,170 Z" fill="#FFF7EA"/>
+  <path d="M940,268 L1040,164 L1140,268 Z" fill="#CFC0A8"/>
+  <ellipse cx="1046" cy="330" rx="120" ry="52" fill="#9AD7E8"/>
+  <ellipse cx="1046" cy="324" rx="96" ry="38" fill="#BFE8F3" opacity=".8"/>
+  <path d="M996,320 q16,-8 32,2 M1066,336 q16,-8 32,2" stroke="#FFF" stroke-width="3.5" fill="none" opacity=".8" stroke-linecap="round"/>
+  <use href="#tent" transform="translate(712,348) scale(1.05)" color="#E87A3E"/>
+  <use href="#tent" transform="translate(818,364) scale(.92)" color="#5FA8C9"/>
+  <use href="#tent" transform="translate(906,336) scale(.8)" color="#8FC7A8"/>
+  <g transform="translate(772,440)">
+    <ellipse cx="0" cy="16" rx="36" ry="12" fill="#C9B79C"/>
+    <path d="M-20,14 L20,-2 M20,14 L-20,-2" stroke="#8A6038" stroke-width="8" stroke-linecap="round"/>
+    <path d="M0,-6 q14,-16 4,-30 q18,14 10,30 q-6,10 -14,0z" fill="#E87A3E"/>
+    <path d="M0,-4 q8,-10 2,-19 q11,9 6,19z" fill="#F5C76B"/>
+  </g>
+  <use href="#p1" transform="translate(716,452) scale(.82)" color="#F5C76B"/>
+  <use href="#p3" transform="translate(834,452) scale(.82)" color="#E9A0A8"/>
+  <use href="#p4" transform="translate(884,432) scale(.78)" color="#5FA8C9"/>
+  <!-- bus -->
+  <g transform="translate(900,530)">
+    <rect x="-96" y="-42" width="192" height="62" rx="12" fill="#F5C76B"/>
+    <rect x="-86" y="-32" width="46" height="30" rx="5" fill="#CFE9F3"/>
+    <rect x="-32" y="-32" width="42" height="30" rx="5" fill="#CFE9F3"/>
+    <rect x="18" y="-32" width="42" height="30" rx="5" fill="#CFE9F3"/>
+    <rect x="66" y="-32" width="26" height="30" rx="5" fill="#CFE9F3"/>
+    <circle cx="-56" cy="22" r="16" fill="#3B2B23"/><circle cx="-56" cy="22" r="7" fill="#C9B79C"/>
+    <circle cx="56" cy="22" r="16" fill="#3B2B23"/><circle cx="56" cy="22" r="7" fill="#C9B79C"/>
+    <rect x="-96" y="-4" width="192" height="8" fill="#E87A3E"/>
+  </g>
+
+  <g transform="translate(830,204)">
+    <rect x="-128" y="-30" width="256" height="60" rx="12" fill="#FFF7EA" stroke="#E87A3E" stroke-width="4"/>
+    <text x="0" y="10" text-anchor="middle" font-size="28" font-weight="700" fill="#C9572A">夏合宿 3泊4日</text>
+  </g>
+  <use href="#tr2" transform="translate(644,452) scale(1.05)"/>
+  <use href="#tr2" transform="translate(1120,432) scale(1.15)"/>
+  <use href="#tr1" transform="translate(986,470) scale(.95)"/>
+  <use href="#tr2" transform="translate(1020,186) scale(.8)"/>
+
+  <!-- ===== LOWER LEFT : gyms & schedule (spot 2) ===== -->
+  <rect x="40" y="1012" width="560" height="26" rx="13" fill="#C9B79C" opacity=".55"/>
+  <g transform="translate(232,872)">
+    <path d="M-128,-10 a128,70 0 0 1 256,0 Z" fill="#7FA8D8"/>
+    <rect x="-128" y="-10" width="256" height="112" rx="6" fill="#FBF3E8"/>
+    <rect x="-128" y="-14" width="256" height="12" rx="6" fill="#5B86B8"/>
+    <g fill="#CFE9F3"><rect x="-108" y="10" width="42" height="40" rx="5"/><rect x="-56" y="10" width="42" height="40" rx="5"/><rect x="-4" y="10" width="42" height="40" rx="5"/><rect x="48" y="10" width="42" height="40" rx="5"/></g>
+    <rect x="-28" y="58" width="56" height="44" rx="4" fill="#8C5A3C"/>
+    <rect x="-96" y="62" width="60" height="22" rx="6" fill="#FFF7EA" stroke="#5B86B8" stroke-width="2.5"/>
+    <text x="-66" y="78" text-anchor="middle" font-size="13" font-weight="700" fill="#2E5A8C">体育館</text>
+  </g>
+  <rect x="58" y="1000" width="292" height="40" rx="10" fill="#FFF7EA" stroke="#2E5A8C" stroke-width="3"/>
+  <text x="204" y="1028" text-anchor="middle" font-size="24" font-weight="700" fill="#2E5A8C">千登世橋中学校</text>
+  <g transform="translate(424,972)">
+    <path d="M-92,-8 L0,-62 L92,-8 Z" fill="#E8A24A"/>
+    <rect x="-92" y="-8" width="184" height="86" rx="6" fill="#FBF3E8"/>
+    <g fill="#FDEBC9"><rect x="-74" y="8" width="34" height="32" rx="4"/><rect x="-30" y="8" width="34" height="32" rx="4"/><rect x="14" y="8" width="34" height="32" rx="4"/><rect x="58" y="8" width="18" height="32" rx="4"/></g>
+    <rect x="-22" y="46" width="44" height="32" rx="4" fill="#8C5A3C"/>
+    <circle cx="0" cy="-30" r="15" fill="#FFF7EA" stroke="#C97047" stroke-width="2.5"/>
+    <path d="M0,-30 v-9 M0,-30 l7,4" stroke="#4A3228" stroke-width="2.5" stroke-linecap="round"/>
+  </g>
+  <rect x="318" y="1058" width="214" height="38" rx="10" fill="#FFF7EA" stroke="#C97047" stroke-width="3"/>
+  <text x="425" y="1085" text-anchor="middle" font-size="23" font-weight="700" fill="#B1602E">目白小学校</text>
+  <g transform="translate(96,1100)">
+    <rect x="-56" y="-26" width="112" height="52" rx="12" fill="#2A211B"/>
+    <text x="0" y="-4" text-anchor="middle" font-size="16" font-weight="700" fill="#F5C76B">MON / FRI</text>
+    <text x="0" y="16" text-anchor="middle" font-size="15" font-weight="700" fill="#FFF7EA">19:00–21:30</text>
+  </g>
+  <use href="#p1" transform="translate(242,1132) scale(.95)" color="#E87A3E"/>
+  <use href="#p2" transform="translate(302,1140) scale(.9)" color="#F5C76B"/>
+  <use href="#p4" transform="translate(150,1092) scale(.92)" color="#5FA8C9"/>
+  <use href="#pl" transform="translate(560,1030) scale(.95)" color="#FFF7EA"/>
+  <use href="#tr1" transform="translate(52,944) scale(1.05)"/>
+  <use href="#tr2" transform="translate(600,900) scale(1)"/>
+  <use href="#tr1" transform="translate(586,1118) scale(.95)"/>
+  <use href="#tr2" transform="translate(132,780) scale(.9)"/>
+  <use href="#ball" transform="translate(624,1066) scale(.85)"/>
+
+  <!-- ===== LOWER RIGHT : the court & 180 members (spot 1) ===== -->
+  <g transform="translate(880,968)">
+    <rect x="-212" y="-116" width="424" height="232" rx="18" fill="#E87A3E"/>
+    <rect x="-200" y="-104" width="400" height="208" rx="12" fill="none" stroke="#FFF3DF" stroke-width="4"/>
+    <path d="M0,-104 v208" stroke="#FFF3DF" stroke-width="4"/>
+    <circle cx="0" cy="0" r="42" fill="none" stroke="#FFF3DF" stroke-width="4"/>
+    <path d="M-200,-62 a78,62 0 0 0 0,124" fill="none" stroke="#FFF3DF" stroke-width="4"/>
+    <path d="M200,-62 a78,62 0 0 1 0,124" fill="none" stroke="#FFF3DF" stroke-width="4"/>
+    <rect x="-200" y="-34" width="54" height="68" fill="none" stroke="#FFF3DF" stroke-width="4"/>
+    <rect x="146" y="-34" width="54" height="68" fill="none" stroke="#FFF3DF" stroke-width="4"/>
+  </g>
+  <use href="#hoop" transform="translate(662,906) scale(1.15)"/>
+  <use href="#hoop" transform="translate(1098,906) scale(1.15)"/>
+  <use href="#pl" transform="translate(756,924) scale(1.05)" color="#FFF7EA"/>
+  <use href="#p1" transform="translate(830,952) scale(1)" color="#1E6B52"/>
+  <use href="#p3" transform="translate(900,916) scale(1)" color="#FFF7EA"/>
+  <use href="#p2" transform="translate(968,960) scale(1)" color="#1E6B52"/>
+  <use href="#p4" transform="translate(1034,930) scale(.98)" color="#FFF7EA"/>
+  <use href="#p1" transform="translate(792,1026) scale(.98)" color="#F5C76B"/>
+  <use href="#p3" transform="translate(880,1042) scale(.98)" color="#1E6B52"/>
+  <use href="#p2" transform="translate(982,1038) scale(.96)" color="#FFF7EA"/>
+  <use href="#ball" transform="translate(718,872) scale(.9)"/>
+  <use href="#ball" transform="translate(1056,1018) scale(.8)"/>
+  <!-- the 180 : benched crowd -->
+  <g>
+    <rect x="636" y="1104" width="496" height="90" rx="14" fill="#17543F"/>
+    <g color="#E87A3E"><use href="#tiny" transform="translate(664,1134)"/><use href="#tiny" transform="translate(720,1134)"/><use href="#tiny" transform="translate(776,1134)"/><use href="#tiny" transform="translate(832,1134)"/></g>
+    <g color="#F5C76B"><use href="#tiny" transform="translate(692,1134)"/><use href="#tiny" transform="translate(748,1134)"/><use href="#tiny" transform="translate(804,1134)"/><use href="#tiny" transform="translate(860,1134)"/></g>
+    <g color="#FFF7EA"><use href="#tiny" transform="translate(888,1134)"/><use href="#tiny" transform="translate(944,1134)"/><use href="#tiny" transform="translate(1000,1134)"/><use href="#tiny" transform="translate(1056,1134)"/></g>
+    <g color="#7FA8D8"><use href="#tiny" transform="translate(916,1134)"/><use href="#tiny" transform="translate(972,1134)"/><use href="#tiny" transform="translate(1028,1134)"/><use href="#tiny" transform="translate(1100,1134)"/></g>
+    <g color="#E9A0A8"><use href="#tiny" transform="translate(676,1170)"/><use href="#tiny" transform="translate(760,1170)"/><use href="#tiny" transform="translate(844,1170)"/><use href="#tiny" transform="translate(928,1170)"/><use href="#tiny" transform="translate(1012,1170)"/><use href="#tiny" transform="translate(1096,1170)"/></g>
+    <g color="#8FC7A8"><use href="#tiny" transform="translate(718,1170)"/><use href="#tiny" transform="translate(802,1170)"/><use href="#tiny" transform="translate(886,1170)"/><use href="#tiny" transform="translate(970,1170)"/><use href="#tiny" transform="translate(1054,1170)"/></g>
+  </g>
+  <g transform="translate(884,820)">
+    <rect x="-116" y="-28" width="232" height="54" rx="12" fill="#2A211B"/>
+    <text x="0" y="8" text-anchor="middle" font-size="27" font-weight="700" fill="#F5C76B">180 MEMBERS</text>
+  </g>
+  <use href="#tr1" transform="translate(636,802) scale(1)"/>
+  <use href="#tr2" transform="translate(1150,870) scale(1.05)"/>
+
+  <!-- ===== BOTTOM : town strip ===== -->
+  <rect x="0" y="1296" width="1200" height="34" rx="17" fill="#C9B79C" opacity=".45"/>
+  <g transform="translate(200,1368)">
+    <rect x="-92" y="-56" width="184" height="86" rx="8" fill="#FBF3E8"/>
+    <rect x="-100" y="-68" width="200" height="18" rx="9" fill="#5FA8C9"/>
+    <rect x="-70" y="-36" width="60" height="44" rx="5" fill="#CFE9F3"/>
+    <rect x="6" y="-36" width="60" height="44" rx="5" fill="#CFE9F3"/>
+    <text x="0" y="-55" text-anchor="middle" font-size="13" font-weight="700" fill="#FFF7EA">STORE</text>
+  </g>
+  <g transform="translate(560,1360)">
+    <rect x="-70" y="-10" width="140" height="14" rx="7" fill="#8C5A3C"/>
+    <rect x="-58" y="4" width="10" height="26" rx="5" fill="#6E452C"/><rect x="48" y="4" width="10" height="26" rx="5" fill="#6E452C"/>
+    <rect x="-70" y="-38" width="140" height="12" rx="6" fill="#8C5A3C"/>
+  </g>
+  <use href="#p2" transform="translate(500,1348) scale(.95)" color="#E9A0A8"/>
+  <use href="#p1" transform="translate(628,1346) scale(.95)" color="#5FA8C9"/>
+  <g transform="translate(840,1362)">
+    <circle cx="-30" cy="14" r="20" fill="none" stroke="#2A211B" stroke-width="5"/>
+    <circle cx="30" cy="14" r="20" fill="none" stroke="#2A211B" stroke-width="5"/>
+    <path d="M-30,14 L-6,-14 H22 L30,14 M-6,-14 L6,14" stroke="#E87A3E" stroke-width="5" fill="none" stroke-linecap="round"/>
+  </g>
+  <use href="#p4" transform="translate(960,1340) scale(1)" color="#F5C76B"/>
+  <use href="#tr1" transform="translate(360,1340) scale(1.1)"/>
+  <use href="#tr2" transform="translate(720,1320) scale(1)"/>
+  <use href="#tr1" transform="translate(1080,1346) scale(1.05)"/>
+  <use href="#tr2" transform="translate(60,1440) scale(.95)"/>
+  <use href="#ball" transform="translate(452,1420) scale(.8)"/>
+
+  <!-- map-level cloud wisps -->
+  <g color="#FBF3E8" opacity=".6">
+    <use href="#cl-shape" transform="translate(-60,560) scale(.7)" fill="currentColor"/>
+    <use href="#cl-shape" transform="translate(940,580) scale(.6)" fill="currentColor"/>
+    <use href="#cl-shape" transform="translate(-80,1240) scale(.55)" fill="currentColor"/>
+  </g>
+</svg>
+    </div>
+  </div>
+</div>
+
+<!-- ===== drifting clouds ===== -->
+<div id="drift" aria-hidden="true">
+  <div class="dc d1"><svg viewBox="0 0 264 92" fill="currentColor"><use href="#cl-shape"/></svg></div>
+  <div class="dc d2"><svg viewBox="0 0 264 92" fill="currentColor"><use href="#cl-shape"/></svg></div>
+  <div class="dc d3"><svg viewBox="0 0 264 92" fill="currentColor"><use href="#cl-shape"/></svg></div>
+  <div class="dc d4"><svg viewBox="0 0 264 92" fill="currentColor"><use href="#cl-shape"/></svg></div>
+</div>
+
+<!-- ===== intro curtain ===== -->
+<div class="curtain" id="intro" aria-hidden="true">
+  <div class="fill"></div>
+  <svg class="cl a" viewBox="0 0 264 92" fill="currentColor"><use href="#cl-shape"/></svg>
+  <svg class="cl b" viewBox="0 0 264 92" fill="currentColor"><use href="#cl-shape"/></svg>
+  <svg class="cl c" viewBox="0 0 264 92" fill="currentColor"><use href="#cl-shape"/></svg>
+  <svg class="cl d" viewBox="0 0 264 92" fill="currentColor"><use href="#cl-shape"/></svg>
+</div>
+
+<!-- ===== outro curtain ===== -->
+<div class="curtain" id="outro" aria-hidden="true">
+  <div class="fill"></div>
+  <svg class="cl a" viewBox="0 0 264 92" fill="currentColor"><use href="#cl-shape"/></svg>
+  <svg class="cl b" viewBox="0 0 264 92" fill="currentColor"><use href="#cl-shape"/></svg>
+  <svg class="cl c" viewBox="0 0 264 92" fill="currentColor"><use href="#cl-shape"/></svg>
+  <svg class="cl d" viewBox="0 0 264 92" fill="currentColor"><use href="#cl-shape"/></svg>
+</div>
+
+<!-- ===== overlay slot ===== -->
+<main id="slot">
+  <div class="intro-logo" id="ovLogo">
+    <div class="mark">H<em>oo</em>ps</div>
+    <div class="sub">早稲田大学 バスケットボールサークル</div>
+    <div class="rule"></div>
+  </div>
+
+  <div class="catch" id="ovCatch">
+    <p>経験も、うまさも、<br>関係ない。<br>ボールがあればそれでいい。</p>
+    <p class="from">――早稲田大学 Hoopsから。</p>
+  </div>
+
+  <div class="news" id="ovNews">
+    <span class="tag">NEWS / 随時受付中</span>
+    <h2>見学・体験はいつでも大歓迎！3泊4日の夏合宿などイベントも盛りだくさん。</h2>
+    <button class="pill" data-open="news">読む</button>
+  </div>
+
+  <article class="spot" id="spot0">
+    <span class="tag">Hoopsについて</span>
+    <h2>ひとつのボールで、180人とつながる。必要なバスケ経験は「0年」。</h2>
+    <p>2014年創設。部活ほど厳しくはないけれど、試合になれば本気。ミニバス経験者も大学から始める初心者も、コートの上ではみんな同じチームメイトです。</p>
+    <button class="pill" data-open="0">もっと見る</button>
+  </article>
+
+  <article class="spot" id="spot1">
+    <span class="tag">練習場所・スケジュール</span>
+    <h2>週2回、月曜と金曜の放課後。千登世橋中学校＆目白小学校でプレイ！</h2>
+    <p>千登世橋中（19:00–21:30）、目白小（18:00–21:00）を中心に活動中。新歓期の入会費は3,000円（通常期6,000円）。2年生からの入会も大歓迎です。</p>
+    <button class="pill" data-open="1">もっと見る</button>
+  </article>
+
+  <article class="spot" id="spot2">
+    <span class="tag">1年の流れ・イベント</span>
+    <h2>バスケだけじゃない！毎月のイベントと年3回の合宿で一生モノの思い出を。</h2>
+    <p>3泊4日の夏合宿をはじめ、毎月楽しい企画を開催。1〜3年生まで学年・男女関係なく仲がいいのがHoops一番の自慢です。</p>
+    <button class="pill" data-open="2">もっと見る</button>
+  </article>
+
+  <article class="spot" id="spot3">
+    <span class="tag">女子・インカレの方へ</span>
+    <h2>男子は早稲田生、女子は他大学の学生も参加できるインカレサークル！</h2>
+    <p>様々な大学からメンバーが集まっています。友達作りや見学だけでもいつでも気軽に遊びに来てください。</p>
+    <button class="pill" data-open="3">もっと見る</button>
+  </article>
+
+  <div class="outro-cta" id="ovOutro">
+    <p class="lead">ひとつのボールを追いかけて、12年。</p>
+    <p class="turn">NEXT PLAYER<br>IT'S YOUR TURN.</p>
+    <div class="cta-list">
+      <button class="cta" data-open="join">
+        <svg width="20" height="20" viewBox="0 0 32 32" fill="none" aria-hidden="true"><circle cx="16" cy="16" r="13" fill="#E87A3E"/><path d="M3 16h26M16 3v26M6.5 6.5A26 26 0 0 0 25.5 25.5M25.5 6.5A26 26 0 0 1 6.5 25.5" stroke="#FFF9F0" stroke-width="1.8"/></svg>
+        新歓・入会ガイドを見る
+      </button>
+      <button class="cta" data-open="gallery">
+        <svg width="20" height="20" viewBox="0 0 32 32" fill="none" aria-hidden="true"><rect x="3" y="8" width="26" height="19" rx="4" fill="#F5C76B"/><path d="M11 8l2.5-3h5L21 8" fill="#F5C76B"/><circle cx="16" cy="17.5" r="6" fill="#FFF9F0"/><circle cx="16" cy="17.5" r="3" fill="#E87A3E"/></svg>
+        1年の流れ・ギャラリー
+      </button>
+      <button class="cta" data-open="insta">
+        <svg width="20" height="20" viewBox="0 0 32 32" fill="none" aria-hidden="true"><path d="M4 7a4 4 0 0 1 4-4h16a4 4 0 0 1 4 4v12a4 4 0 0 1-4 4H14l-7 6v-6a3 3 0 0 1-3-3z" fill="#E9A0A8"/><circle cx="11" cy="13" r="2" fill="#FFF9F0"/><circle cx="17" cy="13" r="2" fill="#FFF9F0"/><circle cx="23" cy="13" r="2" fill="#FFF9F0"/></svg>
+        Instagram（@hoops_waseda）へDM
+      </button>
+    </div>
+    <p class="foot">WASEDA UNIVERSITY HOOPS ／ SINCE 2014</p>
+  </div>
+</main>
+
+<!-- ===== HUD ===== -->
+<div id="rail" aria-hidden="true"><i id="railFill"></i></div>
+
+<div class="hud hud-tl">
+  <div class="logo-mini">Hoops<span>SINCE 2014</span></div>
+</div>
+
+<div class="hud hud-tr">
+  <button class="rbtn" id="menuBtn" aria-label="メニューを開く" aria-haspopup="dialog">
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/></svg>
+  </button>
+  <button class="rbtn ball" id="instaBtn" aria-label="Instagramの案内を開く" aria-haspopup="dialog">
+    <svg width="22" height="22" viewBox="0 0 32 32" fill="none" aria-hidden="true"><circle cx="16" cy="16" r="14" fill="#E87A3E"/><path d="M2 16h28M16 2v28M6 6a28 28 0 0 0 20 20M26 6A28 28 0 0 1 6 26" stroke="#FFF9F0" stroke-width="1.9"/></svg>
+  </button>
+</div>
+
+<div class="hud hud-br">
+  <button class="rbtn" id="scrollBtn" aria-label="次のスポットへ進む">
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M12 4v15M5.5 12.5 12 19l6.5-6.5" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+  </button>
+</div>
+
+<!-- ===== sheet ===== -->
+<div class="sheet" id="sheet" role="dialog" aria-modal="true" aria-labelledby="sheetTitle" hidden>
+  <button class="scrim" id="scrim" aria-label="閉じる"></button>
+  <div class="body">
+    <button class="close" id="sheetClose" aria-label="閉じる">✕</button>
+    <div id="sheetContent"></div>
+  </div>
+</div>
+
+<div id="scroll" aria-hidden="true"></div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js"></script>
+<script>
+(function(){
+  "use strict";
+  var reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+  /* ---- スポットのカメラ座標とテキストはここで一括管理 ---- */
+  var SPOTS = [
+    { id:"about",    nav:"Hoopsについて",      en:"ABOUT",    cam:{ x:-20, y:-15, scale:2.2 }, bg:"#1E6B52" },
+    { id:"practice", nav:"練習場所・スケジュール", en:"PRACTICE", cam:{ x: 25, y:-10, scale:2.4 }, bg:"#1E6B52" },
+    { id:"events",   nav:"1年の流れ・イベント",   en:"EVENTS",   cam:{ x:-15, y: 25, scale:2.3 }, bg:"#EADAC5" },
+    { id:"women",    nav:"女子・インカレの方へ",   en:"FOR YOU",  cam:{ x: 20, y: 30, scale:2.2 }, bg:"#EADAC5" }
+  ];
+
+  var IG = "https://www.instagram.com/hoops_waseda/";
+  var DETAIL = {
+    news: { tag:"NEWS / 随時受付中", title:"見学・体験はいつでも大歓迎です",
+      body:"新歓期だけでなく一年中、見学と体験参加を受け付けています。動きやすい服装と室内シューズだけ持ってきてください。ボールは貸し出します。",
+      dl:[["受付","InstagramのDM（@hoops_waseda）"],["持ち物","動きやすい服・室内シューズ・飲み物"],["体験参加","何回でも無料"],["入会","新歓期 3,000円／通常期 6,000円"]] },
+    0: { tag:"Hoopsについて", title:"ひとつのボールで、180人とつながる",
+      body:"2014年創設。部活ほど厳しくはないけれど、試合になれば本気。ミニバス経験者も大学から始める初心者も、コートの上ではみんな同じチームメイトです。",
+      dl:[["創設","2014年"],["人数","約180人"],["必要な経験","0年"],["男女比","だいたい半々"],["強制参加","なし（来られる日に来るスタイル）"]] },
+    1: { tag:"練習場所・スケジュール", title:"週2回、月曜と金曜の放課後",
+      body:"どちらの体育館も最寄り駅から歩いてすぐ。授業終わりにそのまま向かえる時間設定です。遅れての参加も途中抜けも自由。",
+      dl:[["月曜","千登世橋中学校 19:00–21:30"],["金曜","目白小学校 18:00–21:00"],["入会費","新歓期 3,000円／通常期 6,000円"],["入会時期","1年生・2年生どちらも歓迎"]] },
+    2: { tag:"1年の流れ・イベント", title:"バスケだけじゃない、12ヶ月",
+      body:"3泊4日の夏合宿をはじめ、毎月なにかしらの企画があります。学年も男女も関係なく仲がいいのがHoops一番の自慢です。",
+      dl:[["4月","新歓・体験会ラッシュ"],["6月","学内交流戦"],["8月","夏合宿（3泊4日）"],["10月","ハロウィン企画"],["12月","クリスマス会・忘年会"],["2月","春合宿"]] },
+    3: { tag:"女子・インカレの方へ", title:"他大学の学生も参加できます",
+      body:"男子は早稲田生、女子は他大学の学生も参加できるインカレサークルです。様々な大学からメンバーが集まっています。友達作りや見学だけでも気軽にどうぞ。",
+      dl:[["男子","早稲田大学の学生"],["女子","他大学の学生も参加OK"],["よくいる大学","学習院・日本女子・立教 ほか"],["はじめ方","まずは見学だけでOK"]] },
+    join: { tag:"新歓・入会ガイド", title:"入会までの3ステップ",
+      body:"難しい手続きはありません。DMを1通送るところから始まります。",
+      dl:[["1","InstagramのDMで「見学したい」と送る"],["2","都合のいい練習日に体育館へ来る"],["3","気に入ったら入会（新歓期 3,000円）"]] },
+    gallery: { tag:"ギャラリー", title:"写真でみるHoopsの1年",
+      body:"練習風景、合宿、イベントの写真はInstagramにまとめています。雰囲気はそこが一番わかりやすいです。",
+      dl:[["夏合宿","3泊4日・海と体育館"],["月例イベント","BBQ・ボウリング・カラオケ"],["交流戦","他大学サークルとの試合"]] },
+    insta: { tag:"CONTACT", title:"InstagramのDMが一番早いです",
+      body:"見学の予約も、質問も、DMでそのまま受け付けています。だいたい当日中に返信します。", handle:true, dl:[] }
+  };
+
+  /* ---------- scroll timeline ---------- */
+  var stage = document.getElementById("stage");
+  var railFill = document.getElementById("railFill");
+
+  gsap.registerPlugin(ScrollTrigger);
+  gsap.set("#cam", { scale:1.5, transformOrigin:"50% 50%" });
+  gsap.set("#map", { xPercent:-6, yPercent:8, transformOrigin:"50% 50%" });
+  gsap.set("#ovCatch, #ovNews, .spot, #ovOutro", { autoAlpha:0 });
+
+  var tl = gsap.timeline({
+    defaults:{ ease:"none" },
+    scrollTrigger:{
+      trigger:"#scroll", start:"top top", end:"bottom bottom",
+      scrub: reduce ? true : 1,
+      onUpdate: function(self){ railFill.style.width = (self.progress*100).toFixed(2) + "%"; }
+    }
+  });
+  tl.to({}, { duration:100 }, 0);
+
+  /* 0–15% イントロ */
+  tl.to("#ovLogo", { autoAlpha:0, y:-30, duration:4, ease:"power2.in" }, 4);
+  tl.fromTo("#ovCatch", { autoAlpha:0, y:28 }, { autoAlpha:1, y:0, duration:3, ease:"power2.out" }, 8);
+  tl.to("#ovCatch", { autoAlpha:0, y:-26, duration:2.5, ease:"power2.in" }, 15);
+
+  /* 15–25% ピックアップNEWS＋雲が晴れる */
+  tl.fromTo("#ovNews", { autoAlpha:0, y:32 }, { autoAlpha:1, y:0, duration:2.5, ease:"power2.out" }, 17.5);
+  tl.to("#ovNews", { autoAlpha:0, y:-24, duration:2, ease:"power2.in" }, 24);
+  tl.to("#intro .cl.a", { xPercent:-72, yPercent:-62, duration:11, ease:"power1.in" }, 19);
+  tl.to("#intro .cl.b", { xPercent: 78, yPercent:-56, duration:11, ease:"power1.in" }, 19);
+  tl.to("#intro .cl.c", { xPercent:-82, yPercent: 66, duration:11, ease:"power1.in" }, 19);
+  tl.to("#intro .cl.d", { xPercent: 86, yPercent: 62, duration:11, ease:"power1.in" }, 19);
+  tl.to("#intro .fill", { autoAlpha:0, duration:8 }, 19);
+  tl.to("#intro .cl", { autoAlpha:0, duration:4 }, 26);
+  tl.to("#cam", { scale:1, duration:12, ease:"power1.inOut" }, 19);
+  tl.to("#map", { xPercent:0, yPercent:0, duration:12, ease:"power1.inOut" }, 19);
+
+  /* 25–85% マップ探索 */
+  SPOTS.forEach(function(s, i){
+    var t = 33 + i*14;
+    tl.to("#cam", { scale:s.cam.scale, duration:8, ease:"power2.inOut" }, t);
+    tl.to("#map", { xPercent:s.cam.x, yPercent:s.cam.y, duration:8, ease:"power2.inOut" }, t);
+    tl.to(stage, { backgroundColor:s.bg, duration:6, ease:"power1.inOut" }, t);
+    tl.fromTo("#spot"+i, { autoAlpha:0, y:30 }, { autoAlpha:1, y:0, duration:2.5, ease:"power2.out" }, t+6);
+    tl.to("#spot"+i, { autoAlpha:0, y:-22, duration:2, ease:"power2.in" }, t+11.5);
+  });
+
+  /* 85–100% アウトロ */
+  tl.to("#cam", { scale:0.95, duration:9, ease:"power2.inOut" }, 86);
+  tl.to("#map", { xPercent:0, yPercent:0, duration:9, ease:"power2.inOut" }, 86);
+  tl.to(stage, { backgroundColor:"#F7E2B4", duration:7, ease:"power1.inOut" }, 87);
+  [["a",-84,-72],["b",82,-66],["c",-88,74],["d",90,68]].forEach(function(c){
+    tl.fromTo("#outro .cl."+c[0],
+      { xPercent:c[1], yPercent:c[2], autoAlpha:0 },
+      { xPercent:0, yPercent:0, autoAlpha:1, duration:7, ease:"power2.out" }, 89);
+  });
+  tl.to("#outro .fill", { autoAlpha:1, duration:5 }, 90);
+  tl.fromTo("#ovOutro", { autoAlpha:0, y:36 }, { autoAlpha:1, y:0, duration:4, ease:"power2.out" }, 93);
+
+  /* パララックス（雲レイヤー） */
+  if(!reduce){
+    tl.to(".dc.d1", { xPercent:125, duration:100 }, 0);
+    tl.to(".dc.d2", { xPercent:-135, duration:100 }, 0);
+    tl.to(".dc.d3", { xPercent:115, duration:100 }, 0);
+    tl.to(".dc.d4", { xPercent:-95, duration:100 }, 0);
+  }
+
+  /* ---------- スクロール誘導 ---------- */
+  var FOCUS = [0.04, 0.205, 0.405, 0.545, 0.685, 0.825, 0.965];
+  function maxScroll(){ return document.documentElement.scrollHeight - window.innerHeight; }
+  function goTo(p){
+    window.scrollTo({ top: maxScroll()*p, behavior: reduce ? "auto" : "smooth" });
+  }
+  document.getElementById("scrollBtn").addEventListener("click", function(){
+    var p = window.scrollY / Math.max(1, maxScroll());
+    for(var i=0;i<FOCUS.length;i++){ if(FOCUS[i] > p + 0.02){ goTo(FOCUS[i]); return; } }
+    goTo(0);
+  });
+
+  /* ---------- シート（モーダル） ---------- */
+  var sheet = document.getElementById("sheet");
+  var sheetContent = document.getElementById("sheetContent");
+  var lastFocus = null;
+
+  function esc(s){ return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;"); }
+
+  function openSheet(key){
+    var d = DETAIL[key];
+    if(!d) return;
+    var html = '<span class="tag">' + esc(d.tag) + '</span>' +
+               '<h3 id="sheetTitle">' + esc(d.title) + '</h3>' +
+               '<p>' + esc(d.body) + '</p>';
+    if(d.dl && d.dl.length){
+      html += '<dl>';
+      d.dl.forEach(function(row){ html += '<dt>' + esc(row[0]) + '</dt><dd>' + esc(row[1]) + '</dd>'; });
+      html += '</dl>';
+    }
+    if(d.handle || key === "insta" || key === "gallery" || key === "join" || key === "news"){
+      html += '<div class="handle"><code id="igHandle">@hoops_waseda</code>' +
+              '<button type="button" id="copyBtn">IDをコピー</button></div>' +
+              '<a class="cta" href="' + IG + '" target="_blank" rel="noopener noreferrer">Instagramを開く</a>' +
+              '<p class="hintline">リンクが開かない環境では、上のIDをInstagramアプリで検索してください。</p>';
+    }
+    sheetContent.innerHTML = html;
+    lastFocus = document.activeElement;
+    sheet.hidden = false;
+    document.getElementById("sheetClose").focus();
+    var copy = document.getElementById("copyBtn");
+    if(copy){
+      copy.addEventListener("click", function(){
+        var node = document.getElementById("igHandle");
+        var done = function(){ copy.textContent = "コピーしました"; setTimeout(function(){ copy.textContent = "IDをコピー"; }, 1800); };
+        try{
+          navigator.clipboard.writeText(node.textContent).then(done, function(){ selectNode(node); copy.textContent = "選択しました"; });
+        }catch(e){ selectNode(node); copy.textContent = "選択しました"; }
+      });
+    }
+  }
+  function selectNode(node){
+    try{
+      var r = document.createRange(); r.selectNodeContents(node);
+      var s = window.getSelection(); s.removeAllRanges(); s.addRange(r);
+    }catch(e){}
+  }
+  function closeSheet(){
+    sheet.hidden = true;
+    if(lastFocus && lastFocus.focus) lastFocus.focus();
+  }
+  document.getElementById("scrim").addEventListener("click", closeSheet);
+  document.getElementById("sheetClose").addEventListener("click", closeSheet);
+  document.addEventListener("keydown", function(e){ if(e.key === "Escape" && !sheet.hidden) closeSheet(); });
+  document.addEventListener("click", function(e){
+    var t = e.target.closest("[data-open]");
+    if(t) openSheet(t.getAttribute("data-open"));
+  });
+
+  /* ---------- メニュー ---------- */
+  document.getElementById("menuBtn").addEventListener("click", function(){
+    var html = '<span class="tag">MENU</span><h3 id="sheetTitle">Hoops 早稲田大学</h3>' +
+               '<ul class="navlist">' +
+               '<li><button type="button" data-go="0">トップへ<small>TOP</small></button></li>';
+    SPOTS.forEach(function(s, i){
+      html += '<li><button type="button" data-go="' + (i+2) + '">' + esc(s.nav) + '<small>' + esc(s.en) + '</small></button></li>';
+    });
+    html += '<li><button type="button" data-go="6">お問い合わせ<small>CONTACT</small></button></li></ul>';
+    sheetContent.innerHTML = html;
+    lastFocus = document.activeElement;
+    sheet.hidden = false;
+    document.getElementById("sheetClose").focus();
+    sheetContent.querySelectorAll("[data-go]").forEach(function(b){
+      b.addEventListener("click", function(){
+        var idx = parseInt(b.getAttribute("data-go"), 10);
+        closeSheet();
+        goTo(FOCUS[idx]);
+      });
+    });
+  });
+  document.getElementById("instaBtn").addEventListener("click", function(){ openSheet("insta"); });
+
+  window.addEventListener("load", function(){ ScrollTrigger.refresh(); });
+})();
+</script>
