@@ -77,6 +77,7 @@ body{
   padding-block:calc(84px + env(safe-area-inset-top,0px)) calc(96px + env(safe-area-inset-bottom,0px));
   pointer-events:none;
 }
+#slot{overflow:hidden}
 #slot > *{grid-area:1/1;width:100%;max-width:560px;pointer-events:none}
 #slot button,#slot a{pointer-events:auto}
 
@@ -158,8 +159,7 @@ body{
 .rbtn:hover{transform:scale(1.07)}
 .rbtn:focus-visible{outline:3px solid var(--terra);outline-offset:3px}
 .rbtn.ball{width:44px;height:44px;background:var(--terra)}
-#scrollBtn svg{animation:bob 1.9s ease-in-out infinite}
-@keyframes bob{0%,100%{transform:translateY(-2px)}50%{transform:translateY(3px)}}
+#scrollBtn svg{animation:dribbleBtn 1.5s cubic-bezier(.4,0,.6,1) infinite}
 @media (prefers-reduced-motion:reduce){#scrollBtn svg{animation:none}}
 
 /* progress rail */
@@ -197,6 +197,76 @@ body{
   font-size:.78rem;padding:8px 14px;border-radius:999px;cursor:pointer}
 .sheet .cta{margin-top:1.3rem;width:100%}
 .hintline{margin-top:1.1rem;font-size:.74rem;letter-spacing:.06em;color:var(--ink-2)}
+
+/* ---------- ambient life on the map ---------- */
+@keyframes swayA{0%,100%{transform:rotate(-1.7deg)}50%{transform:rotate(1.7deg)}}
+@keyframes bobA{0%,100%{transform:translateY(0)}50%{transform:translateY(-4px)}}
+@keyframes spinA{to{transform:rotate(360deg)}}
+@keyframes dribbleA{0%{transform:translateY(-34px)}55%{transform:translateY(0) scaleY(1)}62%{transform:translateY(2px) scaleY(.82)}70%{transform:translateY(0) scaleY(1)}100%{transform:translateY(-34px)}}
+@keyframes flickerA{0%,100%{transform:scaleY(1) scaleX(1)}30%{transform:scaleY(1.16) scaleX(.9)}60%{transform:scaleY(.92) scaleX(1.08)}}
+@keyframes shimmerA{0%,100%{opacity:.35;transform:translateX(0)}50%{opacity:.9;transform:translateX(7px)}}
+@keyframes riverA{to{stroke-dashoffset:-136}}
+.sway{transform-box:fill-box;transform-origin:50% 100%;animation:swayA 5.6s ease-in-out infinite;animation-delay:var(--d,0s)}
+.bob{transform-box:fill-box;transform-origin:50% 100%;animation:bobA 2.9s ease-in-out infinite;animation-delay:var(--d,0s)}
+.spin{transform-box:fill-box;transform-origin:50% 50%;animation:spinA 11s linear infinite}
+.dribble{transform-box:fill-box;transform-origin:50% 100%;animation:dribbleA 1.15s cubic-bezier(.4,0,.7,1) infinite}
+.flicker{transform-box:fill-box;transform-origin:50% 100%;animation:flickerA 1.4s ease-in-out infinite}
+.shimmer{animation:shimmerA 4.2s ease-in-out infinite}
+.riverflow{animation:riverA 5.5s linear infinite}
+
+/* ---------- the ball that runs the map ---------- */
+#gameBall{position:absolute;left:50%;top:50.5%;width:5.2%;aspect-ratio:1;
+  margin-left:-2.6%;margin-top:-2.6%;z-index:2;opacity:0;visibility:hidden;
+  filter:drop-shadow(0 6px 10px rgba(20,40,30,.35))}
+#gameBall svg{display:block;width:100%;height:100%}
+#ballRing{position:absolute;inset:-34%;border-radius:50%;border:3px solid var(--mustard);opacity:0}
+
+/* ---------- scoreboard ---------- */
+.hud-bl{bottom:0;left:0;padding-bottom:calc(18px + env(safe-area-inset-bottom,0px));
+  padding-left:max(16px,env(safe-area-inset-left,0px))}
+#board{display:flex;align-items:center;gap:10px;background:var(--ink);color:var(--cream-3);
+  border-radius:999px;padding:9px 16px;box-shadow:0 8px 20px rgba(42,33,27,.26);
+  font-variant-numeric:tabular-nums;letter-spacing:.04em}
+#board .q{font-size:.68rem;font-weight:900;letter-spacing:.1em;background:var(--terra);
+  color:#2A211B;border-radius:999px;padding:3px 9px;min-width:46px;text-align:center;
+  transition:transform .25s ease,background .25s ease}
+#board .q.pop{transform:scale(1.22);background:var(--mustard)}
+#board .clock{font-size:1.02rem;font-weight:900;color:var(--mustard)}
+#board .sep{width:1px;height:18px;background:rgba(255,249,240,.26)}
+#board .mem{display:flex;flex-direction:column;line-height:1.05}
+#board .mem small{font-size:.5rem;letter-spacing:.16em;opacity:.65}
+#board .mem b{font-size:.92rem;font-weight:900}
+#board.final .clock{color:#FFF;animation:buzz .5s steps(2,end) 6}
+@keyframes buzz{0%,100%{opacity:1}50%{opacity:.25}}
+
+/* ---------- logo: the two o's are basketballs ---------- */
+.intro-logo .mark{display:flex;justify-content:center;align-items:baseline;gap:.01em}
+.intro-logo .mark > *{display:inline-block;animation:dropIn .85s cubic-bezier(.18,1.3,.4,1) both;animation-delay:var(--d,0s)}
+@keyframes dropIn{0%{transform:translateY(-120px) rotate(-14deg);opacity:0}55%{opacity:1}100%{transform:none;opacity:1}}
+.ball-o{width:.58em;height:.58em;align-self:center;margin:0 .055em;position:relative;top:.03em}
+.ball-o svg{display:block;width:100%;height:100%;animation:spinA 7s linear infinite;animation-delay:1.1s}
+.intro-logo .rule{animation:ruleIn .6s ease-out .95s both}
+@keyframes ruleIn{from{width:0;opacity:0}to{width:48px;opacity:1}}
+
+/* ---------- spot card: three-point arc + quarter badge ---------- */
+.spot{position:relative;overflow:hidden}
+.spot::after{content:"";position:absolute;top:-58px;right:-58px;width:150px;height:150px;
+  border-radius:50%;border:3px solid rgba(232,122,62,.26);pointer-events:none}
+.cardtop{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.qno{display:inline-grid;place-items:center;width:30px;height:30px;border-radius:50%;
+  background:var(--terra);color:#FFF9F0;font-size:.72rem;font-weight:900;letter-spacing:.02em;flex:none}
+
+/* ---------- controls ---------- */
+#instaBtn svg{transition:transform .45s cubic-bezier(.3,1.2,.4,1)}
+#instaBtn:hover svg{transform:rotate(200deg)}
+@keyframes dribbleBtn{0%,100%{transform:translateY(-3px)}42%{transform:translateY(4px) scaleY(.9)}52%{transform:translateY(2px) scaleY(1)}}
+
+@media (prefers-reduced-motion:reduce){
+  .sway,.bob,.spin,.dribble,.flicker,.shimmer,.riverflow,
+  .intro-logo .mark > *,.ball-o svg,.intro-logo .rule,#board.final .clock{animation:none!important}
+  .intro-logo .mark > *{transform:none;opacity:1}
+  .intro-logo .rule{width:48px;opacity:1}
+}
 </style>
 
 <!-- ===== shared symbols ===== -->
@@ -234,6 +304,7 @@ body{
 <div id="stage" aria-hidden="true">
   <div id="cam">
     <div id="map">
+<div id="gameBall"><div id="ballRing"></div><svg viewBox="0 0 40 40" aria-hidden="true"><circle cx="20" cy="20" r="19" fill="#E87A3E"/><path d="M1,20h38M20,1v38M6.4,6.4A26.9,26.9 0 0 0 33.6,33.6M33.6,6.4A26.9,26.9 0 0 1 6.4,33.6" stroke="#9C4A1E" stroke-width="2" fill="none"/></svg></div>
 <div class="bleed top"></div><div class="bleed mid"></div><div class="bleed bot"></div>
 <svg viewBox="0 0 1200 1500" preserveAspectRatio="xMidYMid meet" font-family="Zen Maru Gothic, sans-serif">
   <!-- ===== ground ===== -->
@@ -247,6 +318,7 @@ body{
   <!-- ===== river + bridge ===== -->
   <path d="M-40,640 C160,598 300,690 470,654 C640,618 760,706 930,666 C1060,636 1152,678 1244,654" fill="none" stroke="#7FC9DF" stroke-width="52" stroke-linecap="round"/>
   <path d="M-40,640 C160,598 300,690 470,654 C640,618 760,706 930,666 C1060,636 1152,678 1244,654" fill="none" stroke="#B6E4F1" stroke-width="24" stroke-linecap="round" opacity=".85"/>
+  <path class="riverflow" d="M-40,640 C160,598 300,690 470,654 C640,618 760,706 930,666 C1060,636 1152,678 1244,654" fill="none" stroke="#FFFFFF" stroke-width="6" stroke-linecap="round" stroke-dasharray="14 54" opacity=".5"/>
   <path d="M120,628 q22,-9 44,2 M330,678 q22,-10 44,2 M700,690 q22,-10 44,2 M1010,650 q22,-9 44,2" stroke="#FFFFFF" stroke-width="4" fill="none" opacity=".7" stroke-linecap="round"/>
   <g transform="translate(596,660)">
     <rect x="-30" y="-52" width="60" height="104" rx="7" fill="#E8956A"/>
@@ -289,16 +361,16 @@ body{
     <rect x="-4" y="2" width="8" height="26" rx="4" fill="#C97047"/>
     <path d="M-44,-6 L0,-44 L44,-6 Z" fill="#F5C76B"/><path d="M-44,-6 L0,-44 L0,-6 Z" fill="#E8B04C"/>
   </g>
-  <use href="#p2" transform="translate(552,528) scale(.9)" color="#E9A0A8"/>
-  <use href="#p3" transform="translate(632,526) scale(.88)" color="#7FA8D8"/>
-  <use href="#p1" transform="translate(420,512) scale(.86)" color="#F5C76B"/>
-  <use href="#p4" transform="translate(206,500) scale(.9)" color="#E87A3E"/>
-  <use href="#p2" transform="translate(262,516) scale(.84)" color="#8FC7A8"/>
+  <g transform="translate(552,528)"><g class="bob" style="--d:0.0s"><use href="#p2" transform="scale(.9)" color="#E9A0A8"/></g></g>
+  <g transform="translate(632,526)"><g class="bob" style="--d:0.37s"><use href="#p3" transform="scale(.88)" color="#7FA8D8"/></g></g>
+  <g transform="translate(420,512)"><g class="bob" style="--d:0.74s"><use href="#p1" transform="scale(.86)" color="#F5C76B"/></g></g>
+  <g transform="translate(206,500)"><g class="bob" style="--d:1.11s"><use href="#p4" transform="scale(.9)" color="#E87A3E"/></g></g>
+  <g transform="translate(262,516)"><g class="bob" style="--d:1.48s"><use href="#p2" transform="scale(.84)" color="#8FC7A8"/></g></g>
   <g>
-    <use href="#tr3" transform="translate(120,430) scale(1.1)"/>
-    <use href="#tr1" transform="translate(660,380) scale(1)"/>
-    <use href="#tr3" transform="translate(96,286) scale(.85)"/>
-    <use href="#tr1" transform="translate(556,268) scale(.8)"/>
+    <g transform="translate(120,430)"><g class="sway" style="--d:0.0s"><use href="#tr3" transform="scale(1.1)"/></g></g>
+    <g transform="translate(660,380)"><g class="sway" style="--d:0.37s"><use href="#tr1" transform="scale(1)"/></g></g>
+    <g transform="translate(96,286)"><g class="sway" style="--d:0.74s"><use href="#tr3" transform="scale(.85)"/></g></g>
+    <g transform="translate(556,268)"><g class="sway" style="--d:1.11s"><use href="#tr1" transform="scale(.8)"/></g></g>
   </g>
   <g fill="#E07A86"><circle cx="160" cy="548" r="7"/><circle cx="182" cy="560" r="6"/><circle cx="140" cy="564" r="6"/></g>
   <g fill="#F5C76B"><circle cx="700" cy="534" r="7"/><circle cx="722" cy="546" r="6"/><circle cx="680" cy="548" r="6"/></g>
@@ -310,19 +382,21 @@ body{
   <path d="M940,268 L1040,164 L1140,268 Z" fill="#CFC0A8"/>
   <ellipse cx="1046" cy="330" rx="120" ry="52" fill="#9AD7E8"/>
   <ellipse cx="1046" cy="324" rx="96" ry="38" fill="#BFE8F3" opacity=".8"/>
-  <path d="M996,320 q16,-8 32,2 M1066,336 q16,-8 32,2" stroke="#FFF" stroke-width="3.5" fill="none" opacity=".8" stroke-linecap="round"/>
+  <path class="shimmer" d="M996,320 q16,-8 32,2 M1066,336 q16,-8 32,2" stroke="#FFF" stroke-width="3.5" fill="none" opacity=".8" stroke-linecap="round"/>
   <use href="#tent" transform="translate(712,348) scale(1.05)" color="#E87A3E"/>
   <use href="#tent" transform="translate(818,364) scale(.92)" color="#5FA8C9"/>
   <use href="#tent" transform="translate(906,336) scale(.8)" color="#8FC7A8"/>
   <g transform="translate(772,440)">
     <ellipse cx="0" cy="16" rx="36" ry="12" fill="#C9B79C"/>
     <path d="M-20,14 L20,-2 M20,14 L-20,-2" stroke="#8A6038" stroke-width="8" stroke-linecap="round"/>
-    <path d="M0,-6 q14,-16 4,-30 q18,14 10,30 q-6,10 -14,0z" fill="#E87A3E"/>
-    <path d="M0,-4 q8,-10 2,-19 q11,9 6,19z" fill="#F5C76B"/>
+    <g class="flicker">
+      <path d="M0,-6 q14,-16 4,-30 q18,14 10,30 q-6,10 -14,0z" fill="#E87A3E"/>
+      <path d="M0,-4 q8,-10 2,-19 q11,9 6,19z" fill="#F5C76B"/>
+    </g>
   </g>
-  <use href="#p1" transform="translate(716,452) scale(.82)" color="#F5C76B"/>
-  <use href="#p3" transform="translate(834,452) scale(.82)" color="#E9A0A8"/>
-  <use href="#p4" transform="translate(884,432) scale(.78)" color="#5FA8C9"/>
+  <g transform="translate(716,452)"><g class="bob" style="--d:1.85s"><use href="#p1" transform="scale(.82)" color="#F5C76B"/></g></g>
+  <g transform="translate(834,452)"><g class="bob" style="--d:2.22s"><use href="#p3" transform="scale(.82)" color="#E9A0A8"/></g></g>
+  <g transform="translate(884,432)"><g class="bob" style="--d:2.59s"><use href="#p4" transform="scale(.78)" color="#5FA8C9"/></g></g>
   <!-- bus -->
   <g transform="translate(900,530)">
     <rect x="-96" y="-42" width="192" height="62" rx="12" fill="#F5C76B"/>
@@ -339,10 +413,10 @@ body{
     <rect x="-128" y="-30" width="256" height="60" rx="12" fill="#FFF7EA" stroke="#E87A3E" stroke-width="4"/>
     <text x="0" y="10" text-anchor="middle" font-size="28" font-weight="700" fill="#C9572A">夏合宿 3泊4日</text>
   </g>
-  <use href="#tr2" transform="translate(644,452) scale(1.05)"/>
-  <use href="#tr2" transform="translate(1120,432) scale(1.15)"/>
-  <use href="#tr1" transform="translate(986,470) scale(.95)"/>
-  <use href="#tr2" transform="translate(1020,186) scale(.8)"/>
+  <g transform="translate(644,452)"><g class="sway" style="--d:1.48s"><use href="#tr2" transform="scale(1.05)"/></g></g>
+  <g transform="translate(1120,432)"><g class="sway" style="--d:1.85s"><use href="#tr2" transform="scale(1.15)"/></g></g>
+  <g transform="translate(986,470)"><g class="sway" style="--d:2.22s"><use href="#tr1" transform="scale(.95)"/></g></g>
+  <g transform="translate(1020,186)"><g class="sway" style="--d:2.59s"><use href="#tr2" transform="scale(.8)"/></g></g>
 
   <!-- ===== LOWER LEFT : gyms & schedule (spot 2) ===== -->
   <rect x="40" y="1012" width="560" height="26" rx="13" fill="#C9B79C" opacity=".55"/>
@@ -372,15 +446,15 @@ body{
     <text x="0" y="-4" text-anchor="middle" font-size="16" font-weight="700" fill="#F5C76B">MON / FRI</text>
     <text x="0" y="16" text-anchor="middle" font-size="15" font-weight="700" fill="#FFF7EA">19:00–21:30</text>
   </g>
-  <use href="#p1" transform="translate(242,1132) scale(.95)" color="#E87A3E"/>
-  <use href="#p2" transform="translate(302,1140) scale(.9)" color="#F5C76B"/>
-  <use href="#p4" transform="translate(150,1092) scale(.92)" color="#5FA8C9"/>
-  <use href="#pl" transform="translate(560,1030) scale(.95)" color="#FFF7EA"/>
-  <use href="#tr1" transform="translate(52,944) scale(1.05)"/>
-  <use href="#tr2" transform="translate(600,900) scale(1)"/>
-  <use href="#tr1" transform="translate(586,1118) scale(.95)"/>
-  <use href="#tr2" transform="translate(132,780) scale(.9)"/>
-  <use href="#ball" transform="translate(624,1066) scale(.85)"/>
+  <g transform="translate(242,1132)"><g class="bob" style="--d:2.96s"><use href="#p1" transform="scale(.95)" color="#E87A3E"/></g></g>
+  <g transform="translate(302,1140)"><g class="bob" style="--d:3.33s"><use href="#p2" transform="scale(.9)" color="#F5C76B"/></g></g>
+  <g transform="translate(150,1092)"><g class="bob" style="--d:3.7s"><use href="#p4" transform="scale(.92)" color="#5FA8C9"/></g></g>
+  <g transform="translate(560,1030)"><g class="bob" style="--d:4.07s"><use href="#pl" transform="scale(.95)" color="#FFF7EA"/></g></g>
+  <g transform="translate(52,944)"><g class="sway" style="--d:2.96s"><use href="#tr1" transform="scale(1.05)"/></g></g>
+  <g transform="translate(600,900)"><g class="sway" style="--d:3.33s"><use href="#tr2" transform="scale(1)"/></g></g>
+  <g transform="translate(586,1118)"><g class="sway" style="--d:3.7s"><use href="#tr1" transform="scale(.95)"/></g></g>
+  <g transform="translate(132,780)"><g class="sway" style="--d:4.07s"><use href="#tr2" transform="scale(.9)"/></g></g>
+  <g transform="translate(624,1066)"><g class="spin"><use href="#ball" transform="scale(.85)"/></g></g>
 
   <!-- ===== LOWER RIGHT : the court & 180 members (spot 1) ===== -->
   <g transform="translate(880,968)">
@@ -395,32 +469,32 @@ body{
   </g>
   <use href="#hoop" transform="translate(662,906) scale(1.15)"/>
   <use href="#hoop" transform="translate(1098,906) scale(1.15)"/>
-  <use href="#pl" transform="translate(756,924) scale(1.05)" color="#FFF7EA"/>
-  <use href="#p1" transform="translate(830,952) scale(1)" color="#1E6B52"/>
-  <use href="#p3" transform="translate(900,916) scale(1)" color="#FFF7EA"/>
-  <use href="#p2" transform="translate(968,960) scale(1)" color="#1E6B52"/>
-  <use href="#p4" transform="translate(1034,930) scale(.98)" color="#FFF7EA"/>
-  <use href="#p1" transform="translate(792,1026) scale(.98)" color="#F5C76B"/>
-  <use href="#p3" transform="translate(880,1042) scale(.98)" color="#1E6B52"/>
-  <use href="#p2" transform="translate(982,1038) scale(.96)" color="#FFF7EA"/>
-  <use href="#ball" transform="translate(718,872) scale(.9)"/>
-  <use href="#ball" transform="translate(1056,1018) scale(.8)"/>
+  <g transform="translate(756,924)"><g class="bob" style="--d:0.04s"><use href="#pl" transform="scale(1.05)" color="#FFF7EA"/></g></g>
+  <g transform="translate(830,952)"><g class="bob" style="--d:0.41s"><use href="#p1" transform="scale(1)" color="#1E6B52"/></g></g>
+  <g transform="translate(900,916)"><g class="bob" style="--d:0.78s"><use href="#p3" transform="scale(1)" color="#FFF7EA"/></g></g>
+  <g transform="translate(968,960)"><g class="bob" style="--d:1.15s"><use href="#p2" transform="scale(1)" color="#1E6B52"/></g></g>
+  <g transform="translate(1034,930)"><g class="bob" style="--d:1.52s"><use href="#p4" transform="scale(.98)" color="#FFF7EA"/></g></g>
+  <g transform="translate(792,1026)"><g class="bob" style="--d:1.89s"><use href="#p1" transform="scale(.98)" color="#F5C76B"/></g></g>
+  <g transform="translate(880,1042)"><g class="bob" style="--d:2.26s"><use href="#p3" transform="scale(.98)" color="#1E6B52"/></g></g>
+  <g transform="translate(982,1038)"><g class="bob" style="--d:2.63s"><use href="#p2" transform="scale(.96)" color="#FFF7EA"/></g></g>
+  <g transform="translate(718,872)"><g class="dribble"><g class="spin"><use href="#ball" transform="scale(.9)"/></g></g></g>
+  <g transform="translate(1056,1018)"><g class="spin"><use href="#ball" transform="scale(.8)"/></g></g>
   <!-- the 180 : benched crowd -->
   <g>
     <rect x="636" y="1104" width="496" height="90" rx="14" fill="#17543F"/>
-    <g color="#E87A3E"><use href="#tiny" transform="translate(664,1134)"/><use href="#tiny" transform="translate(720,1134)"/><use href="#tiny" transform="translate(776,1134)"/><use href="#tiny" transform="translate(832,1134)"/></g>
-    <g color="#F5C76B"><use href="#tiny" transform="translate(692,1134)"/><use href="#tiny" transform="translate(748,1134)"/><use href="#tiny" transform="translate(804,1134)"/><use href="#tiny" transform="translate(860,1134)"/></g>
-    <g color="#FFF7EA"><use href="#tiny" transform="translate(888,1134)"/><use href="#tiny" transform="translate(944,1134)"/><use href="#tiny" transform="translate(1000,1134)"/><use href="#tiny" transform="translate(1056,1134)"/></g>
-    <g color="#7FA8D8"><use href="#tiny" transform="translate(916,1134)"/><use href="#tiny" transform="translate(972,1134)"/><use href="#tiny" transform="translate(1028,1134)"/><use href="#tiny" transform="translate(1100,1134)"/></g>
-    <g color="#E9A0A8"><use href="#tiny" transform="translate(676,1170)"/><use href="#tiny" transform="translate(760,1170)"/><use href="#tiny" transform="translate(844,1170)"/><use href="#tiny" transform="translate(928,1170)"/><use href="#tiny" transform="translate(1012,1170)"/><use href="#tiny" transform="translate(1096,1170)"/></g>
-    <g color="#8FC7A8"><use href="#tiny" transform="translate(718,1170)"/><use href="#tiny" transform="translate(802,1170)"/><use href="#tiny" transform="translate(886,1170)"/><use href="#tiny" transform="translate(970,1170)"/><use href="#tiny" transform="translate(1054,1170)"/></g>
+    <g color="#E87A3E" class="bob" style="--d:0.0s"><use href="#tiny" transform="translate(664,1134)"/><use href="#tiny" transform="translate(720,1134)"/><use href="#tiny" transform="translate(776,1134)"/><use href="#tiny" transform="translate(832,1134)"/></g>
+    <g color="#F5C76B" class="bob" style="--d:0.28s"><use href="#tiny" transform="translate(692,1134)"/><use href="#tiny" transform="translate(748,1134)"/><use href="#tiny" transform="translate(804,1134)"/><use href="#tiny" transform="translate(860,1134)"/></g>
+    <g color="#FFF7EA" class="bob" style="--d:0.56s"><use href="#tiny" transform="translate(888,1134)"/><use href="#tiny" transform="translate(944,1134)"/><use href="#tiny" transform="translate(1000,1134)"/><use href="#tiny" transform="translate(1056,1134)"/></g>
+    <g color="#7FA8D8" class="bob" style="--d:0.84s"><use href="#tiny" transform="translate(916,1134)"/><use href="#tiny" transform="translate(972,1134)"/><use href="#tiny" transform="translate(1028,1134)"/><use href="#tiny" transform="translate(1100,1134)"/></g>
+    <g color="#E9A0A8" class="bob" style="--d:1.12s"><use href="#tiny" transform="translate(676,1170)"/><use href="#tiny" transform="translate(760,1170)"/><use href="#tiny" transform="translate(844,1170)"/><use href="#tiny" transform="translate(928,1170)"/><use href="#tiny" transform="translate(1012,1170)"/><use href="#tiny" transform="translate(1096,1170)"/></g>
+    <g color="#8FC7A8" class="bob" style="--d:1.4s"><use href="#tiny" transform="translate(718,1170)"/><use href="#tiny" transform="translate(802,1170)"/><use href="#tiny" transform="translate(886,1170)"/><use href="#tiny" transform="translate(970,1170)"/><use href="#tiny" transform="translate(1054,1170)"/></g>
   </g>
   <g transform="translate(884,820)">
     <rect x="-116" y="-28" width="232" height="54" rx="12" fill="#2A211B"/>
     <text x="0" y="8" text-anchor="middle" font-size="27" font-weight="700" fill="#F5C76B">180 MEMBERS</text>
   </g>
-  <use href="#tr1" transform="translate(636,802) scale(1)"/>
-  <use href="#tr2" transform="translate(1150,870) scale(1.05)"/>
+  <g transform="translate(636,802)"><g class="sway" style="--d:0.04s"><use href="#tr1" transform="scale(1)"/></g></g>
+  <g transform="translate(1150,870)"><g class="sway" style="--d:0.41s"><use href="#tr2" transform="scale(1.05)"/></g></g>
 
   <!-- ===== BOTTOM : town strip ===== -->
   <rect x="0" y="1296" width="1200" height="34" rx="17" fill="#C9B79C" opacity=".45"/>
@@ -436,19 +510,19 @@ body{
     <rect x="-58" y="4" width="10" height="26" rx="5" fill="#6E452C"/><rect x="48" y="4" width="10" height="26" rx="5" fill="#6E452C"/>
     <rect x="-70" y="-38" width="140" height="12" rx="6" fill="#8C5A3C"/>
   </g>
-  <use href="#p2" transform="translate(500,1348) scale(.95)" color="#E9A0A8"/>
-  <use href="#p1" transform="translate(628,1346) scale(.95)" color="#5FA8C9"/>
+  <g transform="translate(500,1348)"><g class="bob" style="--d:3.0s"><use href="#p2" transform="scale(.95)" color="#E9A0A8"/></g></g>
+  <g transform="translate(628,1346)"><g class="bob" style="--d:3.37s"><use href="#p1" transform="scale(.95)" color="#5FA8C9"/></g></g>
   <g transform="translate(840,1362)">
     <circle cx="-30" cy="14" r="20" fill="none" stroke="#2A211B" stroke-width="5"/>
     <circle cx="30" cy="14" r="20" fill="none" stroke="#2A211B" stroke-width="5"/>
     <path d="M-30,14 L-6,-14 H22 L30,14 M-6,-14 L6,14" stroke="#E87A3E" stroke-width="5" fill="none" stroke-linecap="round"/>
   </g>
-  <use href="#p4" transform="translate(960,1340) scale(1)" color="#F5C76B"/>
-  <use href="#tr1" transform="translate(360,1340) scale(1.1)"/>
-  <use href="#tr2" transform="translate(720,1320) scale(1)"/>
-  <use href="#tr1" transform="translate(1080,1346) scale(1.05)"/>
-  <use href="#tr2" transform="translate(60,1440) scale(.95)"/>
-  <use href="#ball" transform="translate(452,1420) scale(.8)"/>
+  <g transform="translate(960,1340)"><g class="bob" style="--d:3.74s"><use href="#p4" transform="scale(1)" color="#F5C76B"/></g></g>
+  <g transform="translate(360,1340)"><g class="sway" style="--d:0.78s"><use href="#tr1" transform="scale(1.1)"/></g></g>
+  <g transform="translate(720,1320)"><g class="sway" style="--d:1.15s"><use href="#tr2" transform="scale(1)"/></g></g>
+  <g transform="translate(1080,1346)"><g class="sway" style="--d:1.52s"><use href="#tr1" transform="scale(1.05)"/></g></g>
+  <g transform="translate(60,1440)"><g class="sway" style="--d:1.89s"><use href="#tr2" transform="scale(.95)"/></g></g>
+  <g transform="translate(452,1420)"><g class="spin"><use href="#ball" transform="scale(.8)"/></g></g>
 
   <!-- map-level cloud wisps -->
   <g color="#FBF3E8" opacity=".6">
@@ -490,7 +564,7 @@ body{
 <!-- ===== overlay slot ===== -->
 <main id="slot">
   <div class="intro-logo" id="ovLogo">
-    <div class="mark">H<em>oo</em>ps</div>
+    <div class="mark" role="img" aria-label="Hoops"><span style="--d:0s">H</span><span class="ball-o" style="--d:.1s"><svg viewBox="0 0 40 40" aria-hidden="true"><circle cx="20" cy="20" r="19" fill="#E87A3E"/><path d="M1,20h38M20,1v38M6.4,6.4A26.9,26.9 0 0 0 33.6,33.6M33.6,6.4A26.9,26.9 0 0 1 6.4,33.6" stroke="#9C4A1E" stroke-width="2" fill="none"/></svg></span><span class="ball-o" style="--d:.2s"><svg viewBox="0 0 40 40" aria-hidden="true"><circle cx="20" cy="20" r="19" fill="#E87A3E"/><path d="M1,20h38M20,1v38M6.4,6.4A26.9,26.9 0 0 0 33.6,33.6M33.6,6.4A26.9,26.9 0 0 1 6.4,33.6" stroke="#9C4A1E" stroke-width="2" fill="none"/></svg></span><span style="--d:.3s">p</span><span style="--d:.4s">s</span></div>
     <div class="sub">早稲田大学 バスケットボールサークル</div>
     <div class="rule"></div>
   </div>
@@ -507,28 +581,28 @@ body{
   </div>
 
   <article class="spot" id="spot0">
-    <span class="tag">Hoopsについて</span>
+    <div class="cardtop"><span class="qno">Q1</span><span class="tag">Hoopsについて</span></div>
     <h2>ひとつのボールで、180人とつながる。必要なバスケ経験は「0年」。</h2>
     <p>2014年創設。部活ほど厳しくはないけれど、試合になれば本気。ミニバス経験者も大学から始める初心者も、コートの上ではみんな同じチームメイトです。</p>
     <button class="pill" data-open="0">もっと見る</button>
   </article>
 
   <article class="spot" id="spot1">
-    <span class="tag">練習場所・スケジュール</span>
+    <div class="cardtop"><span class="qno">Q2</span><span class="tag">練習場所・スケジュール</span></div>
     <h2>週2回、月曜と金曜の放課後。千登世橋中学校＆目白小学校でプレイ！</h2>
     <p>千登世橋中（19:00–21:30）、目白小（18:00–21:00）を中心に活動中。新歓期の入会費は3,000円（通常期6,000円）。2年生からの入会も大歓迎です。</p>
     <button class="pill" data-open="1">もっと見る</button>
   </article>
 
   <article class="spot" id="spot2">
-    <span class="tag">1年の流れ・イベント</span>
+    <div class="cardtop"><span class="qno">Q3</span><span class="tag">1年の流れ・イベント</span></div>
     <h2>バスケだけじゃない！毎月のイベントと年3回の合宿で一生モノの思い出を。</h2>
     <p>3泊4日の夏合宿をはじめ、毎月楽しい企画を開催。1〜3年生まで学年・男女関係なく仲がいいのがHoops一番の自慢です。</p>
     <button class="pill" data-open="2">もっと見る</button>
   </article>
 
   <article class="spot" id="spot3">
-    <span class="tag">女子・インカレの方へ</span>
+    <div class="cardtop"><span class="qno">Q4</span><span class="tag">女子・インカレの方へ</span></div>
     <h2>男子は早稲田生、女子は他大学の学生も参加できるインカレサークル！</h2>
     <p>様々な大学からメンバーが集まっています。友達作りや見学だけでもいつでも気軽に遊びに来てください。</p>
     <button class="pill" data-open="3">もっと見る</button>
@@ -571,6 +645,15 @@ body{
   </button>
 </div>
 
+<div class="hud hud-bl">
+  <div id="board" role="status" aria-live="off" aria-label="試合進行">
+    <span class="q" id="bq">WARM UP</span>
+    <span class="clock" id="bclock">12:00</span>
+    <span class="sep"></span>
+    <span class="mem"><small>MEMBERS</small><b id="bmem">000</b></span>
+  </div>
+</div>
+
 <div class="hud hud-br">
   <button class="rbtn" id="scrollBtn" aria-label="次のスポットへ進む">
     <svg width="24" height="24" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M12 4v15M5.5 12.5 12 19l6.5-6.5" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
@@ -597,10 +680,10 @@ body{
 
   /* ---- スポットのカメラ座標とテキストはここで一括管理 ---- */
   var SPOTS = [
-    { id:"about",    nav:"Hoopsについて",      en:"ABOUT",    cam:{ x:-20, y:-15, scale:2.2 }, bg:"#1E6B52" },
-    { id:"practice", nav:"練習場所・スケジュール", en:"PRACTICE", cam:{ x: 25, y:-10, scale:2.4 }, bg:"#1E6B52" },
-    { id:"events",   nav:"1年の流れ・イベント",   en:"EVENTS",   cam:{ x:-15, y: 25, scale:2.3 }, bg:"#EADAC5" },
-    { id:"women",    nav:"女子・インカレの方へ",   en:"FOR YOU",  cam:{ x: 20, y: 30, scale:2.2 }, bg:"#EADAC5" }
+    { id:"about",    nav:"Hoopsについて",      en:"ABOUT",    cam:{ x:-20, y:-15, scale:2.2 }, ball:{ x:0.700, y:0.826 }, bg:"#1E6B52" },
+    { id:"practice", nav:"練習場所・スケジュール", en:"PRACTICE", cam:{ x: 25, y:-10, scale:2.4 }, ball:{ x:0.330, y:0.820 }, bg:"#1E6B52" },
+    { id:"events",   nav:"1年の流れ・イベント",   en:"EVENTS",   cam:{ x:-15, y: 25, scale:2.3 }, ball:{ x:0.583, y:0.347 }, bg:"#EADAC5" },
+    { id:"women",    nav:"女子・インカレの方へ",   en:"FOR YOU",  cam:{ x: 20, y: 30, scale:2.2 }, ball:{ x:0.300, y:0.370 }, bg:"#EADAC5" }
   ];
 
   var IG = "https://www.instagram.com/hoops_waseda/";
@@ -634,6 +717,30 @@ body{
   var stage = document.getElementById("stage");
   var railFill = document.getElementById("railFill");
 
+  var mapEl = document.getElementById("map");
+  function ballX(fx){ return (fx - 0.5) * mapEl.offsetWidth; }
+  function ballY(fy){ return (fy - 0.505) * mapEl.offsetHeight; }
+
+  /* ---------- スコアボード（クォーター＋残り時間＋メンバー数） ---------- */
+  var board = document.getElementById("board");
+  var bq = document.getElementById("bq"), bclock = document.getElementById("bclock"), bmem = document.getElementById("bmem");
+  var lastQ = "", popTimer = null;
+  function pad3(n){ n = String(n); while(n.length < 3){ n = "0" + n; } return n; }
+  function paintBoard(p){
+    p = Math.max(0, Math.min(1, p));
+    var rem = (1 - p) * 12 * 60;
+    var mm = Math.floor(rem / 60), ss = Math.floor(rem % 60);
+    bclock.textContent = mm + ":" + (ss < 10 ? "0" : "") + ss;
+    var q = p >= 0.89 ? "FINAL" : p >= 0.75 ? "Q4" : p >= 0.61 ? "Q3" : p >= 0.47 ? "Q2" : p >= 0.33 ? "Q1" : "WARM UP";
+    if(q !== lastQ){
+      lastQ = q; bq.textContent = q; bq.classList.add("pop");
+      clearTimeout(popTimer); popTimer = setTimeout(function(){ bq.classList.remove("pop"); }, 340);
+    }
+    board.classList.toggle("final", p >= 0.89);
+    bmem.textContent = pad3(Math.round(Math.max(0, Math.min(1, (p - 0.26) / 0.62)) * 180));
+  }
+  paintBoard(0);
+
   gsap.registerPlugin(ScrollTrigger);
   gsap.set("#cam", { scale:1.5, transformOrigin:"50% 50%" });
   gsap.set("#map", { xPercent:-6, yPercent:8, transformOrigin:"50% 50%" });
@@ -643,19 +750,20 @@ body{
     defaults:{ ease:"none" },
     scrollTrigger:{
       trigger:"#scroll", start:"top top", end:"bottom bottom",
-      scrub: reduce ? true : 1,
-      onUpdate: function(self){ railFill.style.width = (self.progress*100).toFixed(2) + "%"; }
+      scrub: reduce ? true : 1, invalidateOnRefresh: true,
+      onUpdate: function(self){ railFill.style.width = (self.progress*100).toFixed(2) + "%"; paintBoard(self.progress); }
     }
   });
   tl.to({}, { duration:100 }, 0);
 
   /* 0–15% イントロ */
   tl.to("#ovLogo", { autoAlpha:0, y:-30, duration:4, ease:"power2.in" }, 4);
-  tl.fromTo("#ovCatch", { autoAlpha:0, y:28 }, { autoAlpha:1, y:0, duration:3, ease:"power2.out" }, 8);
+  tl.fromTo("#ovCatch", { autoAlpha:0 }, { autoAlpha:1, duration:1.4 }, 8);
+  tl.fromTo("#ovCatch p", { autoAlpha:0, y:26 }, { autoAlpha:1, y:0, duration:2, stagger:1.1, ease:"power3.out" }, 8);
   tl.to("#ovCatch", { autoAlpha:0, y:-26, duration:2.5, ease:"power2.in" }, 15);
 
   /* 15–25% ピックアップNEWS＋雲が晴れる */
-  tl.fromTo("#ovNews", { autoAlpha:0, y:32 }, { autoAlpha:1, y:0, duration:2.5, ease:"power2.out" }, 17.5);
+  tl.fromTo("#ovNews", { autoAlpha:0, y:38, scale:0.94 }, { autoAlpha:1, y:0, scale:1, duration:2.5, ease:"back.out(1.4)" }, 17.5);
   tl.to("#ovNews", { autoAlpha:0, y:-24, duration:2, ease:"power2.in" }, 24);
   tl.to("#intro .cl.a", { xPercent:-72, yPercent:-62, duration:11, ease:"power1.in" }, 19);
   tl.to("#intro .cl.b", { xPercent: 78, yPercent:-56, duration:11, ease:"power1.in" }, 19);
@@ -663,6 +771,7 @@ body{
   tl.to("#intro .cl.d", { xPercent: 86, yPercent: 62, duration:11, ease:"power1.in" }, 19);
   tl.to("#intro .fill", { autoAlpha:0, duration:8 }, 19);
   tl.to("#intro .cl", { autoAlpha:0, duration:4 }, 26);
+  tl.to("#gameBall", { autoAlpha:1, duration:3 }, 22);
   tl.to("#cam", { scale:1, duration:12, ease:"power1.inOut" }, 19);
   tl.to("#map", { xPercent:0, yPercent:0, duration:12, ease:"power1.inOut" }, 19);
 
@@ -672,11 +781,29 @@ body{
     tl.to("#cam", { scale:s.cam.scale, duration:8, ease:"power2.inOut" }, t);
     tl.to("#map", { xPercent:s.cam.x, yPercent:s.cam.y, duration:8, ease:"power2.inOut" }, t);
     tl.to(stage, { backgroundColor:s.bg, duration:6, ease:"power1.inOut" }, t);
-    tl.fromTo("#spot"+i, { autoAlpha:0, y:30 }, { autoAlpha:1, y:0, duration:2.5, ease:"power2.out" }, t+6);
-    tl.to("#spot"+i, { autoAlpha:0, y:-22, duration:2, ease:"power2.in" }, t+11.5);
+    tl.fromTo("#spot"+i, { autoAlpha:0, x:-36, rotate:-1.6 },
+                          { autoAlpha:1, x:0, rotate:0, duration:2.4, ease:"power3.out" }, t+5.8);
+    tl.fromTo("#spot"+i+" > *", { autoAlpha:0, y:18 },
+                                { autoAlpha:1, y:0, duration:1.5, stagger:0.4, ease:"power2.out" }, t+6.4);
+    tl.to("#spot"+i, { autoAlpha:0, x:30, rotate:1.4, duration:2, ease:"power2.in" }, t+11.5);
+
+    /* ボールがマップ上を転がって次のスポットへ */
+    var prev = i === 0 ? { x:0.5, y:0.505 } : SPOTS[i-1].ball;
+    var dx = s.ball.x - prev.x, dy = s.ball.y - prev.y;
+    var spin = Math.round(Math.sqrt(dx*dx + dy*dy) * 1700) * (dx < 0 ? -1 : 1);
+    tl.to("#gameBall", {
+      x: function(){ return ballX(s.ball.x); }, y: function(){ return ballY(s.ball.y); }, rotation: "+=" + spin,
+      duration:8, ease:"power2.inOut"
+    }, t);
+    tl.fromTo("#ballRing", { scale:0.35, opacity:0.95 }, { scale:2.1, opacity:0, duration:2.2, ease:"power2.out" }, t+7.2);
+
+    /* カメラがドリブルのように小さく弾む */
+    if(!reduce) tl.to("#map", { y:-7, duration:0.7, repeat:9, yoyo:true, ease:"power1.inOut" }, t+0.5);
   });
 
   /* 85–100% アウトロ */
+  tl.to("#gameBall", { x:function(){ return ballX(0.5); }, y:function(){ return ballY(0.47); }, rotation:"+=620", duration:9, ease:"power2.inOut" }, 86);
+  tl.to("#gameBall", { autoAlpha:0, duration:3 }, 90);
   tl.to("#cam", { scale:0.95, duration:9, ease:"power2.inOut" }, 86);
   tl.to("#map", { xPercent:0, yPercent:0, duration:9, ease:"power2.inOut" }, 86);
   tl.to(stage, { backgroundColor:"#F7E2B4", duration:7, ease:"power1.inOut" }, 87);
@@ -686,7 +813,8 @@ body{
       { xPercent:0, yPercent:0, autoAlpha:1, duration:7, ease:"power2.out" }, 89);
   });
   tl.to("#outro .fill", { autoAlpha:1, duration:5 }, 90);
-  tl.fromTo("#ovOutro", { autoAlpha:0, y:36 }, { autoAlpha:1, y:0, duration:4, ease:"power2.out" }, 93);
+  tl.fromTo("#ovOutro", { autoAlpha:0, y:36 }, { autoAlpha:1, y:0, duration:3, ease:"power2.out" }, 93);
+  tl.fromTo("#ovOutro .cta", { autoAlpha:0, y:26 }, { autoAlpha:1, y:0, duration:1.6, stagger:0.55, ease:"back.out(1.5)" }, 94.5);
 
   /* パララックス（雲レイヤー） */
   if(!reduce){
