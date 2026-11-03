@@ -23,7 +23,7 @@ body{
 @media (prefers-reduced-motion:reduce){html{scroll-behavior:auto}}
 
 /* ---------- scroll driver ---------- */
-#scroll{height:660vh}
+#scroll{height:880vh}
 
 /* ---------- fixed canvas ---------- */
 #stage{
@@ -43,7 +43,7 @@ body{
   #F4E9DC 0%,#F4E9DC 41%,#7FC9DF 41%,#7FC9DF 46.5%,
   #1E6B52 46.5%,#1E6B52 78%,#17543F 78%,#17543F 84%,#1E6B52 84%,#1E6B52 100%)}
 #map .bleed.top{bottom:100%;height:240%;background:#F4E9DC}
-#map .bleed.bot{top:100%;height:240%;background:#1E6B52}
+#map .bleed.bot{top:100%;height:240%;border-top:7px solid #DCC9AE;background:#EFE0CE repeating-linear-gradient(90deg,rgba(166,140,105,.16) 0 3px,transparent 3px 58px)}
 
 /* ---------- drifting decor clouds ---------- */
 #drift{position:fixed;inset:0;z-index:2;pointer-events:none;overflow:hidden}
@@ -221,6 +221,15 @@ body{
 #gameBall svg{display:block;width:100%;height:100%}
 #ballRing{position:absolute;inset:-34%;border-radius:50%;border:3px solid var(--mustard);opacity:0}
 
+
+/* ---------- foreground pass-bys ---------- */
+#fore{position:fixed;inset:0;z-index:4;pointer-events:none;overflow:hidden}
+#fore .fg{position:absolute;display:block}
+.fg.f1{top:-18%;left:-46%;width:78vw;color:#E87A3E;opacity:.55}
+.fg.f2{top:34%;right:-40%;width:34vw;color:#17543F;opacity:.45}
+.fg.f3{bottom:-24%;left:-50%;width:92vw;color:#FBF3E8;opacity:.55}
+.fg.f4{top:-30%;right:-34%;width:50vw;color:#F5C76B;opacity:.42}
+
 /* ---------- scoreboard ---------- */
 .hud-bl{bottom:0;left:0;padding-bottom:calc(18px + env(safe-area-inset-bottom,0px));
   padding-left:max(16px,env(safe-area-inset-left,0px))}
@@ -328,6 +337,23 @@ body{
   </g>
   <text x="596" y="742" text-anchor="middle" font-size="19" font-weight="700" fill="#15503C">神田川ブリッジ</text>
 
+  <!-- ===== 空 ===== -->
+  <circle cx="150" cy="96" r="46" fill="#F5C76B" opacity=".75"/>
+  <g stroke="#C9B79C" stroke-width="4" fill="none" stroke-linecap="round" opacity=".8">
+    <path d="M430,120 q16,-14 32,0 q16,-14 32,0"/>
+    <path d="M520,72 q13,-11 26,0 q13,-11 26,0"/>
+    <path d="M960,104 q15,-13 30,0 q15,-13 30,0"/>
+    <path d="M1060,60 q12,-10 24,0 q12,-10 24,0"/>
+  </g>
+  <g color="#FBF3E8" opacity=".85">
+    <use href="#cl-shape" transform="translate(240,150) scale(.62)" fill="currentColor"/>
+    <use href="#cl-shape" transform="translate(690,46) scale(.5)" fill="currentColor"/>
+    <use href="#cl-shape" transform="translate(980,170) scale(.44)" fill="currentColor"/>
+  </g>
+  <g color="#F3DEC6" opacity=".9">
+    <use href="#cl-shape" transform="translate(-40,230) scale(.5)" fill="currentColor"/>
+    <use href="#cl-shape" transform="translate(1000,250) scale(.4)" fill="currentColor"/>
+  </g>
   <!-- ===== UPPER LEFT : campus & cafe (spot 4) ===== -->
   <g transform="translate(316,330)">
     <rect x="-118" y="-56" width="192" height="122" rx="8" fill="#C96A41"/>
@@ -496,6 +522,45 @@ body{
   <g transform="translate(636,802)"><g class="sway" style="--d:0.04s"><use href="#tr1" transform="scale(1)"/></g></g>
   <g transform="translate(1150,870)"><g class="sway" style="--d:0.41s"><use href="#tr2" transform="scale(1.05)"/></g></g>
 
+  <!-- ===== 商店街ゾーン（ベージュ） ===== -->
+  <path d="M0,1282 C170,1258 350,1308 560,1283 C770,1258 990,1310 1200,1280 L1200,1500 L0,1500 Z" fill="#EFE0CE"/>
+  <rect x="0" y="1352" width="1200" height="22" rx="11" fill="#DCC9AE"/>
+  <g transform="translate(600,1308)">
+    <rect x="-180" y="-6" width="360" height="14" rx="7" fill="#C9572A"/>
+    <rect x="-186" y="-20" width="372" height="16" rx="8" fill="#E87A3E"/>
+    <rect x="-176" y="8" width="16" height="34" rx="6" fill="#C9572A"/>
+    <rect x="160" y="8" width="16" height="34" rx="6" fill="#C9572A"/>
+    <text x="0" y="-7" text-anchor="middle" font-size="13" font-weight="700" fill="#FFF7EA">WASEDA SHOPPING STREET</text>
+  </g>
+  <g transform="translate(286,1446)">
+    <rect x="-96" y="-60" width="192" height="92" rx="7" fill="#FBF3E8"/>
+    <rect x="-104" y="-74" width="208" height="18" rx="9" fill="#E87A3E"/>
+    <path d="M-104,-56 h208 v9 a10,10 0 0 1 -10,10 h-188 a10,10 0 0 1 -10,-10 z" fill="#F5C76B"/>
+    <rect x="-80" y="-34" width="64" height="48" rx="5" fill="#CFE9F3"/>
+    <rect x="8" y="-34" width="64" height="48" rx="5" fill="#CFE9F3"/>
+    <g transform="translate(-48,-10) scale(.7)"><circle cx="0" cy="0" r="16" fill="#E87A3E"/><path d="M-16,0h32M0,-16v32" stroke="#9C4A1E" stroke-width="2"/></g>
+    <rect x="22" y="-26" width="36" height="32" rx="4" fill="#FFF7EA"/>
+    <text x="0" y="-61" text-anchor="middle" font-size="14" font-weight="700" fill="#FFF7EA">SPORTS</text>
+  </g>
+  <rect x="180" y="1382" width="212" height="34" rx="9" fill="#FFF7EA" stroke="#C9572A" stroke-width="3"/>
+  <text x="286" y="1407" text-anchor="middle" font-size="21" font-weight="700" fill="#B1512A">スポーツ用品店</text>
+  <g transform="translate(676,1452)">
+    <path d="M-86,-46 h172 l10,14 h-192 z" fill="#8C5A3C"/>
+    <rect x="-86" y="-32" width="172" height="66" rx="6" fill="#FBF3E8"/>
+    <rect x="-70" y="-20" width="140" height="26" rx="5" fill="#2E5A8C"/>
+    <text x="0" y="0" text-anchor="middle" font-size="18" font-weight="700" fill="#FFF7EA">定食 まる屋</text>
+    <rect x="-40" y="14" width="80" height="20" rx="4" fill="#D9C6AC"/>
+  </g>
+  <g transform="translate(1010,1444)">
+    <path d="M-80,-44 L0,-76 L80,-44 Z" fill="#5B86B8"/>
+    <rect x="-80" y="-44" width="160" height="78" rx="6" fill="#FBF3E8"/>
+    <rect x="-20" y="-70" width="40" height="22" rx="5" fill="#C9B79C"/>
+    <path d="M-10,-78 q6,-10 0,-18 M4,-78 q6,-10 0,-18" stroke="#C9B79C" stroke-width="4" fill="none" stroke-linecap="round"/>
+    <rect x="-56" y="-26" width="46" height="34" rx="4" fill="#CFE9F3"/>
+    <rect x="10" y="-26" width="46" height="34" rx="4" fill="#CFE9F3"/>
+    <rect x="-18" y="12" width="36" height="22" rx="4" fill="#8C5A3C"/>
+    <text x="0" y="-50" text-anchor="middle" font-size="15" font-weight="700" fill="#FFF7EA">ゆ</text>
+  </g>
   <!-- ===== BOTTOM : town strip ===== -->
   <rect x="0" y="1296" width="1200" height="34" rx="17" fill="#C9B79C" opacity=".45"/>
   <g transform="translate(200,1368)">
@@ -523,6 +588,9 @@ body{
   <g transform="translate(1080,1346)"><g class="sway" style="--d:1.52s"><use href="#tr1" transform="scale(1.05)"/></g></g>
   <g transform="translate(60,1440)"><g class="sway" style="--d:1.89s"><use href="#tr2" transform="scale(.95)"/></g></g>
   <g transform="translate(452,1420)"><g class="spin"><use href="#ball" transform="scale(.8)"/></g></g>
+  <g transform="translate(470,1372)"><g class="bob" style="--d:1.1s"><use href="#p3" transform="scale(.95)" color="#E87A3E"/></g></g>
+  <g transform="translate(860,1392)"><g class="bob" style="--d:2.3s"><use href="#p1" transform="scale(.92)" color="#8FC7A8"/></g></g>
+  <g transform="translate(1108,1372)"><g class="bob" style="--d:.6s"><use href="#p2" transform="scale(.9)" color="#5FA8C9"/></g></g>
 
 
   <!-- ===== close-up detail: props and voices ===== -->
@@ -563,6 +631,15 @@ body{
   <div class="dc d4"><svg viewBox="0 0 264 92" fill="currentColor"><use href="#cl-shape"/></svg></div>
 </div>
 
+
+<!-- ===== 手前を横切るレイヤー ===== -->
+<div id="fore" aria-hidden="true">
+  <svg class="fg f1" viewBox="0 0 40 40"><circle cx="20" cy="20" r="19" fill="currentColor"/><path d="M1,20h38M20,1v38M6.4,6.4A26.9,26.9 0 0 0 33.6,33.6M33.6,6.4A26.9,26.9 0 0 1 6.4,33.6" stroke="rgba(0,0,0,.18)" stroke-width="2" fill="none"/></svg>
+  <svg class="fg f2" viewBox="0 0 120 200"><path d="M60,0 C104,52 118,126 60,200 C2,126 16,52 60,0 Z" fill="currentColor"/><path d="M60,8 V190" stroke="rgba(0,0,0,.14)" stroke-width="4"/></svg>
+  <svg class="fg f3" viewBox="0 0 264 92"><use href="#cl-shape" fill="currentColor"/></svg>
+  <svg class="fg f4" viewBox="0 0 120 120"><circle cx="60" cy="60" r="50" fill="none" stroke="currentColor" stroke-width="12"/></svg>
+</div>
+
 <!-- ===== intro curtain ===== -->
 <div class="curtain" id="intro" aria-hidden="true">
   <div class="fill"></div>
@@ -598,6 +675,12 @@ body{
     <span class="tag">NEWS / 随時受付中</span>
     <h2>見学・体験はいつでも大歓迎！3泊4日の夏合宿などイベントも盛りだくさん。</h2>
     <button class="pill" data-open="news">読む</button>
+  </div>
+
+  <div class="news" id="ovNews2">
+    <span class="tag">NEWS / 2年生も歓迎</span>
+    <h2>新歓期を過ぎても入会できます。2年生からのスタートも大歓迎。</h2>
+    <button class="pill" data-open="news2">読む</button>
   </div>
 
   <article class="spot" id="spot0">
@@ -698,16 +781,46 @@ body{
   "use strict";
   var reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
-  /* ---- スポットのカメラ座標とテキストはここで一括管理 ---- */
-  var SPOTS = [
-    { id:"about",    nav:"Hoopsについて",      en:"ABOUT",    cam:{ x:-20, y:-15, scale:3.2 }, pull:1.15, rot:-2.2, ball:{ x:0.700, y:0.826 }, bg:"#1E6B52" },
-    { id:"practice", nav:"練習場所・スケジュール", en:"PRACTICE", cam:{ x: 25, y:-10, scale:3.3 }, pull:1.35, rot: 1.9, ball:{ x:0.330, y:0.820 }, bg:"#1E6B52" },
-    { id:"events",   nav:"1年の流れ・イベント",   en:"EVENTS",   cam:{ x:-15, y: 25, scale:3.2 }, pull:1.00, rot:-2.4, ball:{ x:0.520, y:0.355 }, bg:"#EADAC5" },
-    { id:"women",    nav:"女子・インカレの方へ",   en:"FOR YOU",  cam:{ x: 20, y: 30, scale:3.1 }, pull:1.50, rot: 1.7, ball:{ x:0.300, y:0.370 }, bg:"#EADAC5" }
+  /* ---- 絵コンテ：1カットずつ「どこを・どのくらい寄って・どう動いて」を定義 ----
+     cam = [xPercent, yPercent, scale, rotation]
+     move = push(ぐっと寄る) / pull(引く) / sweep(高速で振る) / dive(斜めに落ちる)
+            / drift(ゆっくり流す) / arc(いったん俯瞰まで引いてから寄る)        */
+  var MOVE = {
+    push : { d:1.00, pe:"power3.inOut", se:"back.out(1.12)" },
+    pull : { d:1.00, pe:"power2.inOut", se:"power2.out" },
+    sweep: { d:0.70, pe:"expo.inOut",   se:"power3.out", whip:true },
+    dive : { d:0.82, pe:"power4.inOut", se:"power3.out" },
+    drift: { d:1.30, pe:"sine.inOut",   se:"sine.inOut" },
+    arc  : { d:1.15, pe:"power2.inOut", se:"power1.inOut", via:true }
+  };
+
+  var SCENES = [
+    { name:"マップ全景",     cam:[   0,     0, 1.05,  0.8 ], move:"drift", hold:2.6, bg:"#F4E9DC", ball:[0.50,0.505] },
+    { name:"神田川ブリッジ", cam:[   0,     6, 1.90, -1.8 ], move:"dive",  hold:1.8, bg:"#EADAC5", ball:[0.50,0.470] },
+    { name:"コート",         cam:[ -23.3,-14.5, 3.40, 0.8 ], move:"push",  hold:9.5, bg:"#1E6B52",
+      card:"spot0", q:"Q1", nav:"Hoopsについて", en:"ABOUT" },
+    { name:"180人",          cam:[ -23.5,-27.5, 2.00, 0.0 ], move:"pull",  hold:1.8, bg:"#1E6B52", ball:[0.700,0.826] },
+    { name:"商店街",         cam:[   3,    -33, 3.60,  1.9 ], move:"sweep", hold:2.0, bg:"#EFE0CE" },
+    { name:"下駄箱と自販機", cam:[  38,  -25.5, 3.60, -1.4 ], move:"sweep", hold:1.8, bg:"#1E6B52" },
+    { name:"体育館",         cam:[  28,   -10, 2.70,  0.9 ], move:"pull",  hold:9.5, bg:"#1E6B52",
+      card:"spot1", q:"Q2", nav:"練習場所・スケジュール", en:"PRACTICE" },
+    { name:"川を渡る",       cam:[   0,     6, 1.25, -2.8 ], move:"arc",   hold:1.8, bg:"#EADAC5", ball:[0.52,0.470] },
+    { name:"テント",         cam:[ -12,  25.5, 2.80,  1.1 ], move:"dive",  hold:2.0, bg:"#F4E9DC" },
+    { name:"焚き火とバス",   cam:[ -20,    14, 3.80, -1.3 ], move:"push",  hold:9.5, bg:"#F4E9DC",
+      card:"spot2", q:"Q3", nav:"1年の流れ・イベント", en:"EVENTS" },
+    { name:"山と湖",         cam:[ -36,    22, 3.00,  2.2 ], move:"sweep", hold:1.8, bg:"#F4E9DC" },
+    { name:"早稲田の時計塔", cam:[  24,  27.5, 4.00, -1.6 ], move:"sweep", hold:1.8, bg:"#F4E9DC" },
+    { name:"カフェ",         cam:[   9,  21.3, 2.90,  1.2 ], move:"pull",  hold:9.5, bg:"#EADAC5",
+      card:"spot3", q:"Q4", nav:"女子・インカレの方へ", en:"FOR YOU" },
+    { name:"町へ戻る",       cam:[   0,   -12, 1.70, -1.5 ], move:"pull",  hold:4.5, bg:"#EADAC5",
+      card:"ovNews2", ball:[0.46,0.880] }
   ];
 
   var IG = "https://www.instagram.com/hoops_waseda/";
   var DETAIL = {
+    news2: { tag:"NEWS / 2年生も歓迎", title:"途中から入っても、ちゃんと馴染めます",
+      body:"新歓期を過ぎてからの入会も毎年あります。学年で分かれて練習することはないので、入った日からそのまま同じコートに立てます。",
+      dl:[["入会時期","いつでも可（通年受付）"],["入会費","通常期 6,000円"],["2年生","毎年数人が途中入会しています"],["まずは","1回だけの見学でもOK"]] },
     news: { tag:"NEWS / 随時受付中", title:"見学・体験はいつでも大歓迎です",
       body:"新歓期だけでなく一年中、見学と体験参加を受け付けています。動きやすい服装と室内シューズだけ持ってきてください。ボールは貸し出します。",
       dl:[["受付","InstagramのDM（@hoops_waseda）"],["持ち物","動きやすい服・室内シューズ・飲み物"],["体験参加","何回でも無料"],["入会","新歓期 3,000円／通常期 6,000円"]] },
@@ -744,118 +857,171 @@ body{
   /* ---------- スコアボード（クォーター＋残り時間＋メンバー数） ---------- */
   var board = document.getElementById("board");
   var bq = document.getElementById("bq"), bclock = document.getElementById("bclock"), bmem = document.getElementById("bmem");
-  var lastQ = "", popTimer = null;
+  var lastQ = "", popTimer = null, QMARK = [], FINAL_AT = 0.9;
   function pad3(n){ n = String(n); while(n.length < 3){ n = "0" + n; } return n; }
   function paintBoard(p){
     p = Math.max(0, Math.min(1, p));
     var rem = (1 - p) * 12 * 60;
     var mm = Math.floor(rem / 60), ss = Math.floor(rem % 60);
     bclock.textContent = mm + ":" + (ss < 10 ? "0" : "") + ss;
-    var q = p >= 0.90 ? "FINAL" : p >= 0.74 ? "Q4" : p >= 0.60 ? "Q3" : p >= 0.46 ? "Q2" : p >= 0.32 ? "Q1" : "WARM UP";
+    var q = "WARM UP";
+    for(var qi = 0; qi < QMARK.length; qi++){ if(p >= QMARK[qi].p) q = QMARK[qi].q; }
+    if(p >= FINAL_AT) q = "FINAL";
     if(q !== lastQ){
       lastQ = q; bq.textContent = q; bq.classList.add("pop");
       clearTimeout(popTimer); popTimer = setTimeout(function(){ bq.classList.remove("pop"); }, 340);
     }
-    board.classList.toggle("final", p >= 0.90);
-    bmem.textContent = pad3(Math.round(Math.max(0, Math.min(1, (p - 0.26) / 0.62)) * 180));
+    board.classList.toggle("final", p >= FINAL_AT);
+    bmem.textContent = pad3(Math.round(Math.max(0, Math.min(1, (p - 0.20) / 0.70)) * 180));
   }
   paintBoard(0);
 
   gsap.registerPlugin(ScrollTrigger);
+
+  /* 絵コンテに開始時刻を割り当てる（合計 TOTAL 単位） */
+  var TOTAL = 155, BASE = 3.6, cursor = 30;
+  SCENES.forEach(function(sc, i){
+    sc.dur = BASE * MOVE[sc.move].d;
+    sc.t   = cursor;
+    sc.arrive = cursor + sc.dur;
+    sc.end = sc.arrive + sc.hold;
+    sc.prevScale = i === 0 ? 1 : SCENES[i-1].cam[2];
+    cursor = sc.end;
+  });
+  var OUTRO = cursor + 0.6;
+  SCENES.forEach(function(sc){ if(sc.q) QMARK.push({ p: sc.t / TOTAL, q: sc.q }); });
+  FINAL_AT = (OUTRO + 2) / TOTAL;
+
   gsap.set("#cam", { scale:2.4, rotation:1.5, transformOrigin:"50% 50%" });
   gsap.set("#map", { xPercent:-16, yPercent:12, transformOrigin:"50% 50%" });
-  gsap.set("#ovCatch, #ovNews, .spot, #ovOutro", { autoAlpha:0 });
+  gsap.set("#ovCatch, #ovNews, #ovNews2, .spot, #ovOutro", { autoAlpha:0 });
 
   var tl = gsap.timeline({
     defaults:{ ease:"none" },
     scrollTrigger:{
       trigger:"#scroll", start:"top top", end:"bottom bottom",
-      scrub: reduce ? true : 0.65, invalidateOnRefresh: true,
+      scrub: reduce ? true : 0.6, invalidateOnRefresh: true,
       onUpdate: function(self){ railFill.style.width = (self.progress*100).toFixed(2) + "%"; paintBoard(self.progress); }
     }
   });
-  tl.to({}, { duration:100 }, 0);
+  tl.to({}, { duration:TOTAL }, 0);
 
-  /* 0–15% イントロ */
-  tl.to("#ovLogo", { autoAlpha:0, y:-30, duration:4, ease:"power2.in" }, 4);
-  tl.fromTo("#ovCatch", { autoAlpha:0 }, { autoAlpha:1, duration:1.4 }, 8);
-  tl.fromTo("#ovCatch p", { autoAlpha:0, y:26 }, { autoAlpha:1, y:0, duration:2, stagger:1.1, ease:"power3.out" }, 8);
-  tl.to("#ovCatch", { autoAlpha:0, y:-26, duration:2.5, ease:"power2.in" }, 15);
+  /* ---------- イントロ：雲の中からコピー、そして雲が割れる ---------- */
+  tl.to("#ovLogo", { autoAlpha:0, y:-34, duration:4, ease:"power2.in" }, 5);
+  tl.fromTo("#ovCatch", { autoAlpha:0 }, { autoAlpha:1, duration:1.4 }, 9);
+  tl.fromTo("#ovCatch p", { autoAlpha:0, y:28 }, { autoAlpha:1, y:0, duration:2, stagger:1.2, ease:"power3.out" }, 9);
+  tl.to("#ovCatch", { autoAlpha:0, y:-30, duration:2.4, ease:"power2.in" }, 17);
+  tl.fromTo("#ovNews", { autoAlpha:0, y:40, scale:0.93 }, { autoAlpha:1, y:0, scale:1, duration:2.4, ease:"back.out(1.4)" }, 19.5);
+  tl.to("#ovNews", { autoAlpha:0, y:-26, duration:2, ease:"power2.in" }, 26);
+  tl.to("#intro .cl.a", { xPercent:-112, yPercent:-98, duration:11, ease:"power2.in" }, 20);
+  tl.to("#intro .cl.b", { xPercent: 120, yPercent:-90, duration:11, ease:"power2.in" }, 20);
+  tl.to("#intro .cl.c", { xPercent:-126, yPercent:104, duration:11, ease:"power2.in" }, 20);
+  tl.to("#intro .cl.d", { xPercent: 132, yPercent: 98, duration:11, ease:"power2.in" }, 20);
+  tl.to("#intro .fill", { autoAlpha:0, duration:8 }, 20);
+  tl.to("#intro .cl", { autoAlpha:0, duration:4 }, 27);
+  tl.to("#cam", { scale:1, rotation:0, duration:10, ease:"power2.inOut" }, 20);
+  tl.to("#map", { xPercent:0, yPercent:0, duration:10, ease:"power2.inOut" }, 20);
+  tl.to("#gameBall", { autoAlpha:1, duration:3 }, 24);
 
-  /* 15–25% ピックアップNEWS＋雲が晴れる */
-  tl.fromTo("#ovNews", { autoAlpha:0, y:38, scale:0.94 }, { autoAlpha:1, y:0, scale:1, duration:2.5, ease:"back.out(1.4)" }, 17.5);
-  tl.to("#ovNews", { autoAlpha:0, y:-24, duration:2, ease:"power2.in" }, 24);
-  tl.to("#intro .cl.a", { xPercent:-108, yPercent:-96, duration:11, ease:"power2.in" }, 19);
-  tl.to("#intro .cl.b", { xPercent: 118, yPercent:-88, duration:11, ease:"power2.in" }, 19);
-  tl.to("#intro .cl.c", { xPercent:-124, yPercent:102, duration:11, ease:"power2.in" }, 19);
-  tl.to("#intro .cl.d", { xPercent: 130, yPercent: 96, duration:11, ease:"power2.in" }, 19);
-  tl.to("#intro .fill", { autoAlpha:0, duration:8 }, 19);
-  tl.to("#intro .cl", { autoAlpha:0, duration:4 }, 26);
-  tl.to("#gameBall", { autoAlpha:1, duration:3 }, 22);
-  tl.to("#cam", { scale:1, rotation:0, duration:11, ease:"power2.inOut" }, 19);
-  tl.to("#map", { xPercent:0, yPercent:0, duration:11, ease:"power2.inOut" }, 19);
+  /* ---------- 絵コンテを1カットずつ組み立てる ---------- */
+  SCENES.forEach(function(sc, i){
+    var m = MOVE[sc.move], c = sc.cam, t = sc.t, d = sc.dur;
 
-  /* 25–85% マップ探索 */
-  SPOTS.forEach(function(s, i){
-    var t = 32 + i*14;
-    var from = i === 0 ? { x:0, y:0 } : SPOTS[i-1].cam;
-    /* 経由点：いったん俯瞰まで引き、中間地点を横切ってから寄る */
-    var vx = (from.x + s.cam.x) / 2 * 0.4, vy = (from.y + s.cam.y) / 2 * 0.4;
+    /* 位置 */
+    if(m.via){
+      /* いったん俯瞰まで引いてから寄り直すカット */
+      tl.to("#map", { xPercent:c[0]*0.35, yPercent:c[1]*0.35, duration:d*0.5, ease:"power2.in" }, t);
+      tl.to("#map", { xPercent:c[0], yPercent:c[1], duration:d*0.5, ease:"power2.out" }, t+d*0.5);
+      tl.to("#cam", { scale:Math.min(sc.prevScale, c[2]) * 0.72, duration:d*0.5, ease:"power2.in" }, t);
+      tl.to("#cam", { scale:c[2], duration:d*0.5, ease:m.se }, t+d*0.5);
+    } else {
+      tl.to("#map", { xPercent:c[0], yPercent:c[1], duration:d, ease:m.pe }, t);
+      if(m.whip){
+        /* 振り回すカット：いったんスケールを落としてから戻す */
+        tl.to("#cam", { scale:Math.min(sc.prevScale, c[2]) * 0.82, duration:d*0.45, ease:"power2.in" }, t);
+        tl.to("#cam", { scale:c[2], duration:d*0.55, ease:m.se }, t+d*0.45);
+      } else {
+        tl.to("#cam", { scale:c[2], duration:d, ease:m.se }, t);
+      }
+    }
+    /* 傾き */
+    tl.to("#cam", { rotation:c[3], duration:d, ease:m.pe }, t);
+    /* 地の色 */
+    if(sc.bg) tl.to(stage, { backgroundColor:sc.bg, duration:d*0.8, ease:"power1.inOut" }, t);
 
-    tl.to("#cam", { scale:s.pull, rotation:s.rot, duration:4.6, ease:"power2.inOut" }, t);
-    tl.to("#map", { xPercent:vx, yPercent:vy, duration:4.6, ease:"power2.inOut" }, t);
-    tl.to("#cam", { scale:s.cam.scale, duration:4.8, ease:"back.out(1.15)" }, t+4.6);
-    tl.to("#cam", { rotation:0, duration:4.8, ease:"power2.out" }, t+4.6);
-    tl.to("#map", { xPercent:s.cam.x, yPercent:s.cam.y, duration:4.8, ease:"power2.inOut" }, t+4.6);
-    tl.to(stage, { backgroundColor:s.bg, duration:6, ease:"power1.inOut" }, t+1);
+    /* 速いカットではカメラが細かく弾む */
+    if(!reduce && (sc.move === "sweep" || sc.move === "dive")){
+      tl.to("#map", { y:-13, duration:d/8, repeat:7, yoyo:true, ease:"power1.inOut" }, t);
+    }
 
-    tl.fromTo("#spot"+i, { autoAlpha:0, x:-40, rotate:-1.8 },
-                          { autoAlpha:1, x:0, rotate:0, duration:2.2, ease:"power3.out" }, t+8.3);
-    tl.fromTo("#spot"+i+" > *", { autoAlpha:0, y:18 },
-                                { autoAlpha:1, y:0, duration:1.3, stagger:0.34, ease:"power2.out" }, t+8.9);
-    tl.to("#spot"+i, { autoAlpha:0, x:34, rotate:1.6, duration:1.9, ease:"power2.in" }, t+12.1);
+    /* ボールは引きのカットだけ見せる */
+    if(sc.ball){
+      tl.to("#gameBall", { autoAlpha:1, duration:d*0.4 }, t);
+      tl.to("#gameBall", {
+        x: function(){ return ballX(sc.ball[0]); }, y: function(){ return ballY(sc.ball[1]); },
+        rotation: "+=" + (420 + i*90), duration:d, ease:m.pe
+      }, t);
+      tl.fromTo("#ballRing", { scale:0.3, opacity:0.9 }, { scale:2.2, opacity:0, duration:1.8, ease:"power2.out" }, sc.arrive-0.4);
+    } else if(i > 0 && SCENES[i-1].ball){
+      tl.to("#gameBall", { autoAlpha:0, duration:d*0.5 }, t);
+    }
 
-    /* ボールがマップ上を転がって次のスポットへ */
-    var prev = i === 0 ? { x:0.5, y:0.505 } : SPOTS[i-1].ball;
-    var dx = s.ball.x - prev.x, dy = s.ball.y - prev.y;
-    var spin = Math.round(Math.sqrt(dx*dx + dy*dy) * 2100) * (dx < 0 ? -1 : 1);
-    tl.to("#gameBall", {
-      x: function(){ return ballX(s.ball.x); }, y: function(){ return ballY(s.ball.y); }, rotation: "+=" + spin,
-      duration:9.4, ease:"power2.inOut"
-    }, t);
-    tl.to("#gameBall", { scale:1.5, duration:4.6, ease:"power2.out" }, t);
-    tl.to("#gameBall", { scale:1, duration:4.8, ease:"power2.in" }, t+4.6);
-    tl.fromTo("#ballRing", { scale:0.3, opacity:0.95 }, { scale:2.3, opacity:0, duration:2.2, ease:"power2.out" }, t+8.6);
-
-    /* 引いているあいだカメラがドリブルのように弾む */
-    if(!reduce) tl.to("#map", { y:-11, duration:0.62, repeat:13, yoyo:true, ease:"power1.inOut" }, t+0.4);
+    /* カード */
+    if(sc.card){
+      var sel = "#" + sc.card;
+      tl.fromTo(sel, { autoAlpha:0, x:-42, rotate:-1.9 },
+                     { autoAlpha:1, x:0, rotate:0, duration:1.9, ease:"power3.out" }, sc.arrive-0.8);
+      tl.fromTo(sel+" > *", { autoAlpha:0, y:18 },
+                            { autoAlpha:1, y:0, duration:1.1, stagger:0.3, ease:"power2.out" }, sc.arrive-0.3);
+      tl.to(sel, { autoAlpha:0, x:36, rotate:1.7, duration:1.6, ease:"power2.in" }, sc.end-1.7);
+    }
   });
 
-  /* 85–100% アウトロ */
-  tl.to("#gameBall", { x:function(){ return ballX(0.5); }, y:function(){ return ballY(0.47); }, rotation:"+=900", duration:8, ease:"power2.inOut" }, 88);
-  tl.to("#gameBall", { autoAlpha:0, duration:3 }, 92);
-  tl.to("#cam", { scale:0.95, rotation:-1.2, duration:8, ease:"power2.inOut" }, 88);
-  tl.to("#map", { xPercent:0, yPercent:0, duration:8, ease:"power2.inOut" }, 88);
-  tl.to(stage, { backgroundColor:"#F7E2B4", duration:7, ease:"power1.inOut" }, 89);
+  /* ---------- アウトロ ---------- */
+  tl.to("#cam", { scale:0.92, rotation:1.6, duration:7, ease:"power2.inOut" }, OUTRO);
+  tl.to("#map", { xPercent:0, yPercent:0, duration:7, ease:"power2.inOut" }, OUTRO);
+  tl.to(stage, { backgroundColor:"#F7E2B4", duration:6, ease:"power1.inOut" }, OUTRO+1);
+  tl.to("#gameBall", { x:function(){ return ballX(0.5); }, y:function(){ return ballY(0.47); },
+                       rotation:"+=900", duration:7, ease:"power2.inOut" }, OUTRO);
+  tl.to("#gameBall", { autoAlpha:0, duration:2.5 }, OUTRO+4.5);
   [["a",-126,-108],["b",124,-99],["c",-132,111],["d",135,102]].forEach(function(c){
-    tl.fromTo("#outro .cl."+c[0],
-      { xPercent:c[1], yPercent:c[2], autoAlpha:0 },
-      { xPercent:0, yPercent:0, autoAlpha:1, duration:7, ease:"power2.out" }, 90);
+    tl.fromTo("#outro .cl."+c[0], { xPercent:c[1], yPercent:c[2], autoAlpha:0 },
+      { xPercent:0, yPercent:0, autoAlpha:1, duration:6, ease:"power2.out" }, OUTRO+3);
   });
-  tl.to("#outro .fill", { autoAlpha:1, duration:5 }, 91);
-  tl.fromTo("#ovOutro", { autoAlpha:0, y:36 }, { autoAlpha:1, y:0, duration:3, ease:"power2.out" }, 94);
-  tl.fromTo("#ovOutro .cta", { autoAlpha:0, y:26 }, { autoAlpha:1, y:0, duration:1.6, stagger:0.5, ease:"back.out(1.5)" }, 95.4);
+  tl.to("#outro .fill", { autoAlpha:1, duration:5 }, OUTRO+4);
+  tl.fromTo("#ovOutro", { autoAlpha:0, y:38 }, { autoAlpha:1, y:0, duration:3, ease:"power2.out" }, OUTRO+6.5);
+  tl.fromTo("#ovOutro .cta", { autoAlpha:0, y:26 }, { autoAlpha:1, y:0, duration:1.5, stagger:0.5, ease:"back.out(1.5)" }, OUTRO+8);
 
-  /* パララックス（雲レイヤー） */
+  /* ---------- 奥と手前のレイヤーが別速度で流れる ---------- */
   if(!reduce){
-    tl.to(".dc.d1", { xPercent:300, yPercent:-40, duration:100 }, 0);
-    tl.to(".dc.d2", { xPercent:-330, yPercent:55, duration:100 }, 0);
-    tl.to(".dc.d3", { xPercent:270, yPercent:-60, duration:100 }, 0);
-    tl.to(".dc.d4", { xPercent:-240, yPercent:38, duration:100 }, 0);
+    tl.to(".dc.d1", { xPercent:360, yPercent:-52, duration:TOTAL }, 0);
+    tl.to(".dc.d2", { xPercent:-400, yPercent:68, duration:TOTAL }, 0);
+    tl.to(".dc.d3", { xPercent:330, yPercent:-74, duration:TOTAL }, 0);
+    tl.to(".dc.d4", { xPercent:-290, yPercent:46, duration:TOTAL }, 0);
+    /* 手前の大きな影は、速いカットのときだけ画面を横切る */
+    var FG = [
+      { el:".fg.f1", from:{ xPercent:-30, yPercent:-20, rotation:0 },   to:{ xPercent:210, yPercent:120, rotation:160 } },
+      { el:".fg.f2", from:{ xPercent:40,  yPercent:-60, rotation:-20 }, to:{ xPercent:-190, yPercent:90, rotation:40 } },
+      { el:".fg.f3", from:{ xPercent:-40, yPercent:40,  rotation:0 },   to:{ xPercent:180, yPercent:-70, rotation:0 } },
+      { el:".fg.f4", from:{ xPercent:30,  yPercent:-40, rotation:0 },   to:{ xPercent:-170, yPercent:130, rotation:-90 } }
+    ];
+    var fast = SCENES.filter(function(sc){ return sc.move === "sweep" || sc.move === "dive"; });
+    fast.forEach(function(sc, k){
+      var f = FG[k % FG.length];
+      var o = {}; for(var key in f.to){ o[key] = f.to[key]; }
+      o.duration = sc.dur * 1.5; o.ease = "power1.in";
+      var fr = {}; for(var k2 in f.from){ fr[k2] = f.from[k2]; }
+      fr.autoAlpha = 0;
+      o.autoAlpha = 1;
+      tl.fromTo(f.el, fr, o, sc.t - sc.dur*0.25);
+      tl.to(f.el, { autoAlpha:0, duration:sc.dur*0.5 }, sc.arrive);
+    });
   }
 
   /* ---------- スクロール誘導 ---------- */
-  var FOCUS = [0.04, 0.205, 0.42, 0.56, 0.70, 0.84, 0.97];
+  var FOCUS = [0.035, 0.09, 0.16].concat(
+    SCENES.map(function(sc){ return (sc.arrive + 0.6) / TOTAL; })
+  ).concat([(OUTRO + 7.5) / TOTAL]);
   function maxScroll(){ return document.documentElement.scrollHeight - window.innerHeight; }
   function goTo(p){
     window.scrollTo({ top: maxScroll()*p, behavior: reduce ? "auto" : "smooth" });
@@ -928,19 +1094,19 @@ body{
     var html = '<span class="tag">MENU</span><h3 id="sheetTitle">Hoops 早稲田大学</h3>' +
                '<ul class="navlist">' +
                '<li><button type="button" data-go="0">トップへ<small>TOP</small></button></li>';
-    SPOTS.forEach(function(s, i){
-      html += '<li><button type="button" data-go="' + (i+2) + '">' + esc(s.nav) + '<small>' + esc(s.en) + '</small></button></li>';
+    SCENES.forEach(function(sc, i){
+      if(!sc.nav) return;
+      html += '<li><button type="button" data-go="' + (i + 3) + '">' + esc(sc.nav) + '<small>' + esc(sc.en) + '</small></button></li>';
     });
-    html += '<li><button type="button" data-go="6">お問い合わせ<small>CONTACT</small></button></li></ul>';
+    html += '<li><button type="button" data-go="' + (FOCUS.length - 1) + '">お問い合わせ<small>CONTACT</small></button></li></ul>';
     sheetContent.innerHTML = html;
     lastFocus = document.activeElement;
     sheet.hidden = false;
     document.getElementById("sheetClose").focus();
     sheetContent.querySelectorAll("[data-go]").forEach(function(b){
       b.addEventListener("click", function(){
-        var idx = parseInt(b.getAttribute("data-go"), 10);
         closeSheet();
-        goTo(FOCUS[idx]);
+        goTo(FOCUS[parseInt(b.getAttribute("data-go"), 10)]);
       });
     });
   });
