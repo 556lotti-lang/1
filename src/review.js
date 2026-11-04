@@ -60,6 +60,70 @@
     return true;
   }
 
+
+  /* 現局面の押し引き状況と推奨打（検討・アシスト・バッジで共通して使う） */
+  function buildContext(view, cands, pool, bestSh, counts, melds, dora) {
+    var ths = D.threats(view);
+    var foldThs = D.foldThreats(view, ths);
+    var go = Math.floor(view.turnCount / 4) + 1;
+    var value = AI.handValue(view, counts, melds);
+    var good = AI.isGoodShape(cands, bestSh);
+    var risk = foldThs.length ? Th.allowedRisk(bestSh, good, value >= 4, go, view.wallLeft) : 1;
+    var genbutsu = D.genbutsuInHand(view, ths);
+    var recommend, mode;
+    if (foldThs.length && risk <= 0.015) {
+      mode = 'fold';
+      recommend = cands.slice().sort(function (a, b) {
+        var da = D.estimate(view, a.tile, ths).rate, db = D.estimate(view, b.tile, ths).rate;
+        if (da !== db) return da - db;
+        return b.ukeire - a.ukeire;
+      })[0];
+    } else if (foldThs.length) {
+      mode = 'push';
+      var okRisk = pool.filter(function (c) { return D.estimate(view, c.tile, ths).rate <= risk; });
+      recommend = (okRisk.length ? okRisk : pool).slice()
+        .sort(function (a, b) { return b.ukeire - a.ukeire; })[0];
+    } else {
+      mode = 'efficiency';
+      recommend = pool.map(function (c) {
+        return {
+          c: c, s: c.ukeire - (dora[c.tile] ? 4 : 0)
+            - (AI.isYakuhaiType(view, c.tile) && counts[c.tile] >= 2 ? 4 : 0)
+            + Th.isolatedValue(c.tile, view) * 0.01
+        };
+      }).sort(function (a, b) { return b.s - a.s; })[0].c;
+    }
+    return {
+      ths: ths, foldThs: foldThs, go: go, value: value, good: good, risk: risk,
+      genbutsu: genbutsu, recommend: recommend, mode: mode, bestShanten: bestSh
+    };
+  }
+
+  /* 14枚の局面に対する推奨打（UIのアシスト用） */
+  function recommendFor(view, opts) {
+    var counts = C.countsFromIds(view.hand);
+    var melds = view.melds.length;
+    if (C.sumCounts(counts) % 3 !== 2) return null;
+    var allowedTiles = null;
+    if (opts && opts.discardable) {
+      allowedTiles = {};
+      for (var i = 0; i < opts.discardable.length; i++) allowedTiles[C.idToType(opts.discardable[i])] = 1;
+    }
+    var cands = C.discardOptions(counts, melds, view.seen);
+    if (allowedTiles) cands = cands.filter(function (c) { return allowedTiles[c.tile]; });
+    if (!cands.length) return null;
+    var bestSh = cands[0].shanten;
+    var pool = cands.filter(function (c) { return c.shanten === bestSh; });
+    var ctx = buildContext(view, cands, pool, bestSh, counts, melds, AI.doraSet(view));
+    return {
+      tile: ctx.recommend.tile, ukeire: ctx.recommend.ukeire, tiles: ctx.recommend.tiles,
+      shanten: ctx.recommend.shanten, mode: ctx.mode, risk: ctx.risk,
+      danger: ctx.ths.length ? D.estimate(view, ctx.recommend.tile, ctx.ths) : null,
+      genbutsu: ctx.genbutsu, bestShanten: bestSh,
+      maxUkeire: pool.reduce(function (m, c) { return Math.max(m, c.ukeire); }, 0)
+    };
+  }
+
   /* ---------- 打牌の分析 ---------- */
   function analyzeDiscard(view, opts, chosenId) {
     var chosen = C.idToType(chosenId);
@@ -76,33 +140,10 @@
     var maxUk = 0;
     for (i = 0; i < pool.length; i++) maxUk = Math.max(maxUk, pool[i].ukeire);
 
-    var ths = D.threats(view);
-    var foldThs = D.foldThreats(view, ths);
-    var go = Math.floor(view.turnCount / 4) + 1;
-    var value = AI.handValue(view, counts, melds);
-    var good = AI.isGoodShape(cands, bestSh);
-    var risk = foldThs.length ? Th.allowedRisk(bestSh, good, value >= 4, go, view.wallLeft) : 1;
+    var ctx = buildContext(view, cands, pool, bestSh, counts, melds, dora);
+    var ths = ctx.ths, foldThs = ctx.foldThs, go = ctx.go, value = ctx.value,
+      good = ctx.good, risk = ctx.risk, recommend = ctx.recommend, genbutsu = ctx.genbutsu;
     var dg = ths.length ? D.estimate(view, chosen, ths) : { rate: 0, label: '-' };
-    var genbutsu = D.genbutsuInHand(view, ths);
-
-    // 推奨打: 押し引き局面なら許容放銃率を満たす中で最大受け入れ、平時は価値補正つき
-    var recommend;
-    if (foldThs.length && risk <= 0.015) {
-      var safest = cands.slice().sort(function (a, b) {
-        var da = D.estimate(view, a.tile, ths).rate, db = D.estimate(view, b.tile, ths).rate;
-        if (da !== db) return da - db;
-        return b.ukeire - a.ukeire;
-      });
-      recommend = safest[0];
-    } else if (foldThs.length) {
-      var okRisk = pool.filter(function (c) { return D.estimate(view, c.tile, ths).rate <= risk; });
-      var src = okRisk.length ? okRisk : pool;
-      recommend = src.slice().sort(function (a, b) { return b.ukeire - a.ukeire; })[0];
-    } else {
-      recommend = pool.map(function (c) {
-        return { c: c, s: c.ukeire - (dora[c.tile] ? 4 : 0) - (AI.isYakuhaiType(view, c.tile) && counts[c.tile] >= 2 ? 4 : 0) + Th.isolatedValue(c.tile, view) * 0.01 };
-      }).sort(function (a, b) { return b.s - a.s; })[0].c;
-    }
 
     var mine = null;
     for (i = 0; i < cands.length; i++) if (cands[i].tile === chosen) mine = cands[i];
@@ -537,6 +578,8 @@
     analyzeCall: analyzeCall,
     winMissRecord: winMissRecord,
     blockCount: blockCount,
+    recommendFor: recommendFor,
+    buildContext: buildContext,
     isIsolated: isIsolated,
     rel: rel,
     tileListStr: tileListStr

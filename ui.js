@@ -35,20 +35,9 @@
     o = o || {};
     var t = el('span', 'tile');
     if (o.cls) t.className += ' ' + o.cls;
-    if (type == null) { t.className += ' back'; t.appendChild(el('b', null, '')); return t; }
-    if (type >= 27) {
-      t.className += ' honor';
-      if (type === 31) t.className += ' dragon-haku';
-      if (type === 32) t.className += ' dragon-hatsu';
-      if (type === 33) t.className += ' dragon-chun';
-      t.appendChild(el('b', null, HONOR[type - 27]));
-    } else {
-      var suit = Math.floor(type / 9);
-      t.className += ' s-' + 'mps'[suit];
-      if (o.red) t.className += ' red';
-      t.appendChild(el('b', null, String(type % 9 + 1)));
-      t.appendChild(el('i', null, '萬筒索'[suit]));
-    }
+    if (type == null) { t.className += ' back'; return t; }
+    if (o.red) t.className += ' red';
+    t.innerHTML = MJTiles.face(type, { red: !!o.red });
     return t;
   }
   function tileById(id, o) {
@@ -65,6 +54,27 @@
       w.appendChild(tileById(d.id, { cls: cls }));
     });
     return w;
+  }
+
+  // 卓上の1人分（名前・副露・河）。河は席の向きに合わせて回転させる
+  var ROT = { top: 180, left: 90, right: 270, bottom: 0 };
+  function seatCell(v, k, pos) {
+    var p = (v.me + k) % 4;
+    var pd = v.players[p];
+    var cell = el('div', 'seat-cell ' + pos + (pd.riichi ? ' is-riichi' : ''));
+    var head = el('div', 'seat-head');
+    head.appendChild(el('span', 'seat-wind', WIND_CH[pd.seatWind]));
+    head.appendChild(el('span', 'seat-name', k === 0 ? '自分' : SEAT_LABEL[k]));
+    if (p === v.oya) head.appendChild(el('span', 'oya-mark', '親'));
+    if (pd.riichi) head.appendChild(el('span', 'riichi-badge', 'リーチ'));
+    head.appendChild(el('span', 'seat-score', pd.score.toLocaleString()));
+    cell.appendChild(head);
+    if (k !== 0 && pd.melds && pd.melds.length) cell.appendChild(meldsNode(pd.melds));
+    var box = el('div', 'river-box r' + ROT[pos]);
+    box.style.setProperty('--rows', Math.max(3, Math.ceil(pd.discards.length / 6)));
+    box.appendChild(riverNode(pd.discards));
+    cell.appendChild(box);
+    return cell;
   }
   function meldsNode(melds, small) {
     var w = el('div', 'melds');
@@ -119,41 +129,17 @@
     bar.appendChild(bTh);
     app.appendChild(bar);
 
-    // --- 他家 ---
-    var opp = el('div', 'opponents');
-    [1, 2, 3].forEach(function (k) {
-      var p = (v.me + k) % 4;
-      var pd = v.players[p];
-      var seat = el('div', 'seat');
-      var head = el('div', 'seat-head');
-      head.appendChild(el('span', 'seat-name', SEAT_LABEL[k]));
-      head.appendChild(el('span', 'seat-wind', WIND_CH[pd.seatWind] + (p === v.oya ? '(親)' : '')));
-      if (pd.riichi) head.appendChild(el('span', 'riichi-badge', 'リーチ'));
-      head.appendChild(el('span', 'seat-score', pd.score.toLocaleString()));
-      seat.appendChild(head);
-      if (pd.melds.length) seat.appendChild(meldsNode(pd.melds));
-      seat.appendChild(riverNode(pd.discards));
-      opp.appendChild(seat);
-    });
+    // --- 卓（対面=上 / 上家=左 / 下家=右 / 自分=下） ---
     var table = el('div', 'table');
-    table.appendChild(opp);
-
-    // --- 自分の河 + アシスト ---
-    var crow = el('div', 'center-row');
-    var mr = el('div', 'my-river');
-    var mh = el('div', 'seat-head');
-    mh.appendChild(el('span', 'seat-name', '自分の河'));
-    mh.appendChild(el('span', 'seat-wind', WIND_CH[v.seatWind] + (v.me === v.oya ? '(親)' : '')));
-    if (v.riichi) mh.appendChild(el('span', 'riichi-badge', 'リーチ'));
-    mh.appendChild(el('span', 'seat-score', v.scores[v.me].toLocaleString()));
-    mr.appendChild(mh);
-    mr.appendChild(riverNode(v.players[v.me].discards));
-    crow.appendChild(mr);
-
-    if (cfg.assist) crow.appendChild(assistNode(v));
-    table.appendChild(crow);
-    table.appendChild(compassNode(v));
+    var grid = el('div', 'table-grid');
+    grid.appendChild(seatCell(v, 2, 'top'));
+    grid.appendChild(seatCell(v, 3, 'left'));
+    grid.appendChild(compassNode(v));
+    grid.appendChild(seatCell(v, 1, 'right'));
+    grid.appendChild(seatCell(v, 0, 'bottom'));
+    table.appendChild(grid);
     app.appendChild(table);
+    if (cfg.assist) app.appendChild(assistNode(v));
 
     // --- 手牌 ---
     var hz = el('div', 'handzone');
@@ -187,15 +173,22 @@
       var line = el('div');
       line.innerHTML = (sh < 0 ? '<b>和了</b>' : sh === 0 ? '<b>テンパイ</b>' : '<b>' + sh + '向聴</b>');
       box.appendChild(line);
-      var best = a.cands.filter(function (c) { return c.shanten === sh; })
-        .sort(function (x, y) { return y.ukeire - x.ukeire; })[0];
+      var best = R.recommendFor(v, state.mode === 'turn' ? state.opts : null);
       if (best) {
         var d = el('div');
-        d.innerHTML = '推奨打: <b>' + tileText(best.tile) + '</b> → 受け入れ <b>' + best.ukeire + '</b>枚';
+        if (best.mode === 'fold') {
+          d.innerHTML = '推奨打: <b>' + tileText(best.tile) + '</b>（ベタオリ・'
+            + (best.danger ? best.danger.label : '') + '）';
+        } else {
+          d.innerHTML = '推奨打: <b>' + tileText(best.tile) + '</b> → 受け入れ <b>' + best.ukeire + '</b>枚'
+            + (best.mode === 'push' ? '（押せる範囲で最大）' : '');
+        }
         box.appendChild(d);
-        box.appendChild(el('div', null, best.tiles.slice(0, 8).map(function (x) {
-          return tileText(x.type) + '×' + x.count;
-        }).join(' ') + (best.tiles.length > 8 ? ' 他' + (best.tiles.length - 8) + '種' : '')));
+        if (best.mode !== 'fold' && best.tiles) {
+          box.appendChild(el('div', null, best.tiles.slice(0, 8).map(function (x) {
+            return tileText(x.type) + '×' + x.count;
+          }).join(' ') + (best.tiles.length > 8 ? ' 他' + (best.tiles.length - 8) + '種' : '')));
+        }
       }
     } else {
       var l2 = el('div');
@@ -236,7 +229,7 @@
 
   // 卓中央の場況表示
   function compassNode(v) {
-    var wrap = el('div', 'felt-center');
+    var wrap = el('div', 'felt-center compass-cell');
     var c = el('div', 'compass');
     function pcell(k, cls) {
       var p = (v.me + k) % 4;
@@ -298,12 +291,7 @@
 
     var rec = null, dangerMap = {};
     if (cfg.assist && clickable) {
-      var a = analysisNow(v);
-      if (a.type === 14 && a.best) {
-        var sh = a.best.shanten;
-        rec = a.cands.filter(function (c) { return c.shanten === sh; })
-          .sort(function (x, y) { return y.ukeire - x.ukeire; })[0];
-      }
+      rec = R.recommendFor(v, state.mode === 'turn' ? state.opts : null);
       var ths2 = D.threats(v);
       if (ths2.length) {
         v.hand.forEach(function (id) {
@@ -331,8 +319,7 @@
         } else if (dangerMap[t]) {
           var dgv = dangerMap[t];
           if (dgv.rate <= 0.001) btn.appendChild(el('span', 'badge safe', '現物'));
-          else if (dgv.rate < 0.045) btn.appendChild(el('span', 'badge safe', Math.round(dgv.rate * 100) + '%'));
-          else btn.appendChild(el('span', 'badge danger', Math.round(dgv.rate * 100) + '%'));
+          else if (dgv.rate >= 0.06) btn.appendChild(el('span', 'badge danger', Math.round(dgv.rate * 100) + '%'));
           btn.title = dgv.label + ' 推定放銃率' + (dgv.rate * 100).toFixed(1) + '%';
         }
       }
