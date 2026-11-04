@@ -1,8 +1,8 @@
 /* エンジン検証テスト:  node tests/engine.test.cjs */
 const fs = require('fs'), path = require('path');
 const dir = path.join(__dirname, '..', 'src');
-for (const f of ['core.js', 'score.js']) new Function(fs.readFileSync(path.join(dir, f), 'utf8'))();
-const C = globalThis.MJCore, S = globalThis.MJScore;
+for (const f of ['core.js', 'score.js', 'theory.js', 'danger.js', 'ai.js', 'review.js']) new Function(fs.readFileSync(path.join(dir, f), 'utf8'))();
+const C = globalThis.MJCore, S = globalThis.MJScore, Th = globalThis.MJTheory, D = globalThis.MJDanger, R = globalThis.MJReview;
 
 let pass = 0, fail = 0;
 function eq(name, got, exp) {
@@ -135,6 +135,64 @@ for (let m = 0; m <= 3; m++) for (let k = 0; k < 3000; k++) {
   if (C.shantenStandard(c, m) !== C.shantenStandardSlow(c, m)) mismatch++;
 }
 eq('高速シャンテン==リファレンス(12000局面)', mismatch, 0);
+
+/* ---------- 戦術基準（資料「麻雀の上達法と必須スキル」準拠） ---------- */
+
+// オーラス条件計算 4・5・6の法則（資料の計算例と一致すること）
+let oc = Th.orasuCondition(5000, 2, 1, false, false);
+eq('条件計算 D5000/2本場/供託1 脇ロン', oc.ronAny, 3900);
+eq('条件計算 D5000/2本場/供託1 直撃', oc.ronDirect, 2000);
+eq('条件計算 Δ3200 自分が親(÷4)', Th.orasuCondition(3200, 0, 0, true, false).tsumoText, '1,000点オール');
+eq('条件計算 Δ3200 子→子(÷5)', Th.orasuCondition(3200, 0, 0, false, false).tsumoText, '700・1300');
+eq('条件計算 Δ3200 子→親(÷6)', Th.orasuCondition(3200, 0, 0, false, true).tsumoText, '700・1300');
+eq('条件計算 既にトップなら差0で null', Th.orasuCondition(0, 0, 0, false, false), null);
+
+// 押し引きの許容放銃率（聴牌は押し / 1向聴は条件つき / 2向聴以下はベタオリ）
+eq('押し引き 聴牌は押し', Th.allowedRisk(0, true, true, 8, 40) === 1, true);
+eq('押し引き 2向聴は撤退', Th.allowedRisk(2, true, true, 8, 40) <= 0.015, true);
+eq('押し引き 好形高打点1向聴(中盤)', Th.allowedRisk(1, true, true, 8, 40), 0.18);
+eq('押し引き 好形高打点1向聴(14巡目)', Th.allowedRisk(1, true, true, 14, 20), 0.05);
+eq('押し引き 愚形安手1向聴', Th.allowedRisk(1, false, false, 8, 40), 0.06);
+eq('守備モデル 3フーロは即オリ', Th.foldLineVsMelds(3, 1), true);
+eq('守備モデル 2フーロは7巡目以降', [Th.foldLineVsMelds(2, 6), Th.foldLineVsMelds(2, 7)], [false, true]);
+eq('守備モデル 1フーロは10巡目以降', [Th.foldLineVsMelds(1, 9), Th.foldLineVsMelds(1, 10)], [false, true]);
+
+// 孤立牌の価値序列: 字牌 < 1,9 < 2,8 < 3-7、客風は北→西→南→東の順に処理
+const vw = { seatWind: 28, roundWind: 27 };
+eq('孤立牌 字牌 < 1萬', Th.isolatedValue(T('1z'), vw) < Th.isolatedValue(T('1m'), vw), true);
+eq('孤立牌 1萬 < 2萬', Th.isolatedValue(T('1m'), vw) < Th.isolatedValue(T('2m'), vw), true);
+eq('孤立牌 2萬 < 5萬', Th.isolatedValue(T('2m'), vw) < Th.isolatedValue(T('5m'), vw), true);
+eq('孤立牌 客風 < 役牌(白)', Th.isolatedValue(T('3z'), vw) < Th.isolatedValue(T('5z'), vw), true);
+eq('孤立牌 北を西より先に切る', Th.isolatedValue(T('4z'), vw) < Th.isolatedValue(T('3z'), vw), true);
+eq('孤立牌 西を南より先に切る', Th.isolatedValue(T('3z'), vw) < Th.isolatedValue(T('2z'), vw), true);
+
+// 危険度序列（リーチ者の河に 4m / 2p がある想定）
+function dangerView(discards, myHand) {
+  const seen = C.emptyCounts();
+  const d1 = discards.map((t, i) => ({ id: t * 4, turn: i + 1 }));
+  d1.forEach(d => seen[C.idToType(d.id)]++);
+  myHand.forEach(t => seen[t]++);
+  return {
+    me: 0, hand: myHand.map(t => t * 4), seen, turnCount: 24, wallLeft: 40,
+    players: [0, 1, 2, 3].map(i => ({
+      idx: i, discards: i === 1 ? d1 : [], melds: [], riichi: i === 1, riichiTurn: i === 1 ? 0 : -1
+    }))
+  };
+}
+const dv = dangerView([T('4m'), T('2p')], [T('1m'), T('5m'), T('7m'), T('1p'), T('5p'), T('1z'), T('5z')]);
+const dr = t => D.estimate(dv, T(t));
+eq('危険度 現物は0%', dr('4m').rate, 0);
+eq('危険度 表スジ(1萬)', dr('1m').label, '表スジ');
+eq('危険度 無スジ中張(5萬)が最も危険', dr('5m').rate > dr('1m').rate && dr('5m').rate > dr('5z').rate, true);
+eq('危険度 生牌の字牌は片スジより安全', dr('5z').rate < 0.09, true);
+eq('危険度 片スジ(5筒)', dr('5p').label, '片スジ');
+const dv2 = dangerView([T('4m'), T('2p')], [T('4m'), T('5m'), T('7m'), T('2p'), T('5p'), T('1z')]);
+eq('現物の抽出', D.genbutsuInHand(dv2).map(C.typeToStr).sort(), ['2p', '4m']);
+
+// ブロック数（5ブロック理論の判定用）
+eq('ブロック数 4ブロック', R.blockCount(hand('123m456m78p11s3z'), 0), 4);
+eq('ブロック数 5ブロック', R.blockCount(hand('123m45m78p11s34s9z'), 0), 5);
+eq('ブロック数 鳴き込み', R.blockCount(hand('45m78p11s34s'), 1), 5);
 
 console.log('\n' + pass + ' passed, ' + fail + ' failed');
 process.exit(fail ? 1 : 0);

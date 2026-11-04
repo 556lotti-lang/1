@@ -1,7 +1,7 @@
 /* UI: 卓の描画 / 人間プレイヤーの操作 / 検討レポート */
 (function () {
   'use strict';
-  var C = MJCore, S = MJScore, Gm = MJGame, AI = MJAI, R = MJReview;
+  var C = MJCore, S = MJScore, Gm = MJGame, AI = MJAI, R = MJReview, D = MJDanger, Th = MJTheory;
 
   var SEAT_LABEL = ['自分', '下家', '対面', '上家'];
   var WIND_CH = { 27: '東', 28: '南', 29: '西', 30: '北' };
@@ -114,6 +114,9 @@
     var bRep = el('button', 'icon-btn', '検討');
     bRep.onclick = function () { showReport(false); };
     bar.appendChild(bRep);
+    var bTh = el('button', 'icon-btn', '理論');
+    bTh.onclick = function () { theoryScreen(); };
+    bar.appendChild(bTh);
     app.appendChild(bar);
 
     // --- 他家 ---
@@ -203,12 +206,29 @@
         box.appendChild(el('div', null, '待ち: ' + v.waits.map(tileText).join('・')));
       }
     }
-    var riichiPlayers = v.players.filter(function (p) { return p.riichi && p.idx !== v.me; });
-    if (riichiPlayers.length) {
-      box.appendChild(el('div', 'lbl', '警戒'));
-      box.appendChild(el('div', null, riichiPlayers.map(function (p) {
-        return SEAT_LABEL[(p.idx - v.me + 4) % 4];
-      }).join('・') + ' がリーチ中（安全牌に🛡）'));
+    var ths = D.foldThreats(v);
+    if (ths.length) {
+      box.appendChild(el('div', 'lbl', '押し引き'));
+      box.appendChild(el('div', null, ths.map(function (t) {
+        return SEAT_LABEL[(t.p - v.me + 4) % 4] + (t.riichi ? 'リーチ' : t.melds + 'フーロ');
+      }).join('・')));
+      var sh = a.type === 14 ? (a.best ? a.best.shanten : 9) : a.shanten;
+      var cnts = C.countsFromIds(v.hand);
+      var val = AI.handValue(v, cnts, v.melds.length);
+      var good = a.type === 14 ? AI.isGoodShape(a.cands, sh) : (a.ukeire >= 6);
+      var risk = Th.allowedRisk(sh, good, val >= 4, Math.floor(v.turnCount / 4) + 1, v.wallLeft);
+      var line = el('div');
+      line.innerHTML = risk <= 0.015
+        ? '基準: <b>ベタオリ</b>（2向聴以下は即撤退）'
+        : (sh === 0 ? '基準: <b>押し</b>（聴牌は押す）' : '基準: 放銃率 <b>' + Math.round(risk * 100) + '%</b> まで押せる');
+      box.appendChild(line);
+      var gen = D.genbutsuInHand(v, ths);
+      box.appendChild(el('div', null, gen.length ? '現物: ' + gen.map(tileText).join('・') : '現物なし'));
+    }
+    var oc = orasuInfo(v);
+    if (oc) {
+      box.appendChild(el('div', 'lbl', 'オーラス条件'));
+      oc.forEach(function (line) { box.appendChild(el('div', null, line)); });
     }
     return box;
   }
@@ -246,6 +266,29 @@
     return wrap;
   }
 
+
+  // オーラス（最終局）なら逆転条件を計算（4・5・6の法則）
+  function orasuInfo(v) {
+    var last = v.rule.length === 'one'
+      || (v.rule.length === 'tonpuu' && v.roundWind === 27 && v.kyoku === 4)
+      || (v.rule.length === 'hanchan' && v.roundWind === 28 && v.kyoku === 4);
+    if (!last) return null;
+    var my = v.scores[v.me];
+    var order = v.scores.map(function (s, i) { return { i: i, s: s }; }).sort(function (a, b) { return b.s - a.s; });
+    if (order[0].i === v.me) return ['現在トップ（' + my.toLocaleString() + '点）。放銃に注意。'];
+    var out = [];
+    for (var k = 0; k < order.length; k++) {
+      var t = order[k];
+      if (t.i === v.me || t.s <= my) continue;
+      var r = Th.orasuCondition(t.s - my, v.honba, v.kyotaku, v.me === v.oya, t.i === v.oya);
+      if (!r) continue;
+      out.push(SEAT_LABEL[(t.i - v.me + 4) % 4] + '超え(' + (t.s - my).toLocaleString() + '点差): ロン'
+        + r.ronAny.toLocaleString() + '／直撃' + r.ronDirect.toLocaleString() + '／ツモ' + r.tsumoText);
+      if (out.length >= 2) break;
+    }
+    return out.length ? out : null;
+  }
+
   function handRow(v) {
     var row = el('div', 'hand-row');
     var clickable = (state.mode === 'turn' || state.mode === 'riichi-select');
@@ -261,9 +304,12 @@
         rec = a.cands.filter(function (c) { return c.shanten === sh; })
           .sort(function (x, y) { return y.ukeire - x.ukeire; })[0];
       }
-      var threat = AI.anyThreat(v);
-      if (threat) {
-        v.hand.forEach(function (id) { dangerMap[C.idToType(id)] = AI.tileDanger(v, C.idToType(id)); });
+      var ths2 = D.threats(v);
+      if (ths2.length) {
+        v.hand.forEach(function (id) {
+          var t = C.idToType(id);
+          if (dangerMap[t] == null) dangerMap[t] = D.estimate(v, t, ths2);
+        });
       }
     }
 
@@ -282,9 +328,12 @@
         if (rec && t === rec.tile) {
           var b = el('span', 'badge rec', '推奨');
           btn.appendChild(b);
-        } else if (dangerMap[t] != null) {
-          if (dangerMap[t] < 0.05) btn.appendChild(el('span', 'badge safe', '🛡'));
-          else if (dangerMap[t] >= 0.5) btn.appendChild(el('span', 'badge danger', '危'));
+        } else if (dangerMap[t]) {
+          var dgv = dangerMap[t];
+          if (dgv.rate <= 0.001) btn.appendChild(el('span', 'badge safe', '現物'));
+          else if (dgv.rate < 0.045) btn.appendChild(el('span', 'badge safe', Math.round(dgv.rate * 100) + '%'));
+          else btn.appendChild(el('span', 'badge danger', Math.round(dgv.rate * 100) + '%'));
+          btn.title = dgv.label + ' 推定放銃率' + (dgv.rate * 100).toFixed(1) + '%';
         }
       }
       if (ok) {
@@ -483,7 +532,12 @@
             : '読みにくい牌での放銃で、避けるのは難しい局面でした。')
       });
     }
-    if (e.winner === me) rec.meta.wins.push({ kyoku: e.kyoku, points: e.gained, result: e.result });
+    if (e.winner === me) {
+      rec.meta.wins.push({ kyoku: e.kyoku, points: e.gained, result: e.result });
+      rec.meta.winTurns.push(Math.floor(state.gs.turnCount / 4) + 1);
+      if (state.calledThisHand) rec.meta.callWins++;
+    }
+    if (e.kind === 'ron' && e.loser === me && state.calledThisHand) rec.meta.callDealIns++;
     state.handLog.push({
       kyoku: WIND_CH[e.roundWind] + e.kyoku + '局' + (e.honba ? ' ' + e.honba + '本場' : ''),
       text: (e.winner === me ? '自分の' : SEAT_LABEL[(e.winner - me + 4) % 4] + 'の')
@@ -583,11 +637,14 @@
     var sevText = m.severity === 'high' ? '重大' : m.severity === 'mid' ? '要改善' : '検討';
     var catText = {
       shanten: '牌効率(シャンテン戻し)', efficiency: '牌効率(受け入れ)', push: '押し引き',
-      'win-miss': '和了見逃し', riichi: 'リーチ判断', call: '鳴き判断', dealin: '放銃'
+      'win-miss': '和了見逃し', riichi: 'リーチ判断', call: '鳴き判断', dealin: '放銃',
+      isolated: '孤立牌の切り順'
     }[m.category] || m.category;
+    var pri = Th.PRIORITY[m.category];
     head.appendChild(el('span', 'sev', sevText));
     head.appendChild(el('span', null, (m.roundWind ? WIND_CH[m.roundWind] : '') + m.kyoku + '局 ' + (m.go ? m.go + '巡目' : '')));
     head.appendChild(el('span', null, catText));
+    if (pri) head.appendChild(el('span', 'pri p' + pri.rank, '第' + pri.rank + '優先 / 影響' + pri.impact));
     box.appendChild(head);
     box.appendChild(el('div', 'cmt', m.comment));
     if (m.hand && m.hand.length) {
@@ -644,10 +701,56 @@
       grid.appendChild(stat('局数', s.hands, '局'));
       panel.appendChild(grid);
 
-      panel.appendChild(el('h3', null, '総評'));
+      panel.appendChild(el('h3', null, 'スタッツ（参考値）'));
+      var st = rep.stats;
+      var T = Th.STATS_TARGET;
+      var stbl = el('table', 'score-table');
+      var hr = el('tr');
+      ['指標', '今回', '目安', ''].forEach(function (h) { hr.appendChild(el('th', null, h)); });
+      stbl.appendChild(hr);
+      function srow(label, val, targetText, ok, raw) {
+        var tr = el('tr');
+        tr.appendChild(el('td', null, label));
+        tr.appendChild(el('td', null, raw != null ? raw : (val == null ? '—' : Math.round(val * 1000) / 10 + '%')));
+        tr.appendChild(el('td', null, targetText));
+        tr.appendChild(el('td', ok === null ? null : (ok ? 'delta-plus' : 'delta-minus'), ok === null ? '' : (ok ? '○' : '△')));
+        stbl.appendChild(tr);
+      }
+      srow('和了率', st.agariRate, '20〜23%', st.agariRate >= T.agari.low);
+      srow('放銃率', st.houjuRate, '12%以下', st.houjuRate <= T.houju.good);
+      srow('和銃差', st.diff, '10%以上', st.diff >= T.diff.min);
+      srow('立直率', st.riichiRate, '20%前後', null);
+      srow('副露率', st.fuuroRate, '20〜40%', null);
+      srow('平均和了巡目', null, '12.0巡未満', st.avgWinTurn == null ? null : st.avgWinTurn < T.agariJunme.target,
+        st.avgWinTurn == null ? '—' : (Math.round(st.avgWinTurn * 10) / 10) + '巡');
+      if (st.fuuroAgariRate != null) {
+        srow('副露後和了率', st.fuuroAgariRate, '30%前後', st.fuuroAgariRate >= 0.25);
+        srow('副露後放銃率', st.fuuroHoujuRate, '11〜12%', st.fuuroHoujuRate <= 0.12);
+      }
+      panel.appendChild(stbl);
+      panel.appendChild(el('p', 'hint',
+        '※ ' + st.hands + '局ぶんのデータです。信頼できる自己分析には本来500〜1000半荘が必要で、'
+        + 'この数字は傾向の目安にすぎません。安定して見るべきは下の指摘内容です。'));
+
+      panel.appendChild(el('h3', null, '総評（改善の優先順）'));
       var ul = el('ul', 'advice');
-      rep.advice.forEach(function (a) { ul.appendChild(el('li', null, a)); });
+      rep.advice.forEach(function (a) {
+        var li = el('li');
+        li.appendChild(el('b', null, '第' + a.rank + '優先 ' + a.title + ' — '));
+        li.appendChild(document.createTextNode(a.text));
+        ul.appendChild(li);
+      });
+      if (!rep.advice.length) ul.appendChild(el('li', null, '指摘なし。この調子で続けましょう。'));
       panel.appendChild(ul);
+      var ph = Th.ROADMAP[rep.phase];
+      if (ph) {
+        var pbox = el('div', 'phase-box');
+        pbox.appendChild(el('div', 'lbl', '現在地の目安（ロードマップ）'));
+        pbox.appendChild(el('b', null, ph.phase + '（' + ph.rank + '）'));
+        pbox.appendChild(el('div', null, '目標スタッツ: ' + ph.stats));
+        pbox.appendChild(el('div', null, '次に固める技術: ' + ph.core));
+        panel.appendChild(pbox);
+      }
 
       if (state.handLog.length) {
         panel.appendChild(el('h3', null, '局の記録'));
@@ -672,6 +775,9 @@
       }
 
       var wrap = el('div', 'actionbar');
+      var th = el('button', 'btn ghost', '理論ガイド');
+      th.onclick = function () { theoryScreen(); };
+      wrap.appendChild(th);
       if (isFinal) {
         var again = el('button', 'btn primary', 'もう一度対局');
         again.onclick = function () { close(); startScreen(); };
@@ -692,6 +798,79 @@
     }, { wide: true });
   }
 
+
+  /* ---------- 理論ガイド ---------- */
+  function theoryScreen(jumpId) {
+    return overlay(function (panel, close) {
+      panel.appendChild(el('h2', null, '理論ガイド'));
+      panel.appendChild(el('p', 'hint', '出典: 共有ドキュメント「麻雀の上達法と必須スキル」。このアプリの検討エンジンは、ここに書かれた基準をそのまま判定に使っています。'));
+
+      var nav = el('div', 'tabs');
+      var bodies = {};
+      Th.SECTIONS.forEach(function (sec, idx) {
+        var b = el('button', 'tab', sec.title);
+        b.onclick = function () {
+          Object.keys(bodies).forEach(function (k) { bodies[k].hidden = true; });
+          Array.prototype.forEach.call(nav.children, function (c) { c.setAttribute('aria-pressed', 'false'); });
+          bodies[sec.id].hidden = false;
+          b.setAttribute('aria-pressed', 'true');
+        };
+        nav.appendChild(b);
+      });
+      panel.appendChild(nav);
+
+      Th.SECTIONS.forEach(function (sec, idx) {
+        var box = el('div', 'theory-body');
+        sec.body.forEach(function (p) { box.appendChild(el('p', null, p)); });
+        if (sec.id === 'bouguyo') {
+          var t = el('table', 'score-table danger-table');
+          var hr = el('tr');
+          ['ランク', '牌の分類', '推定放銃率'].forEach(function (h) { hr.appendChild(el('th', null, h)); });
+          t.appendChild(hr);
+          Th.DANGER_TABLE.forEach(function (d) {
+            var tr = el('tr');
+            tr.appendChild(el('td', null, String(d.rank)));
+            tr.appendChild(el('td', null, d.name));
+            tr.appendChild(el('td', null, d.rate));
+            t.appendChild(tr);
+          });
+          box.appendChild(t);
+          box.appendChild(el('div', 'lbl', '統計的に否定された俗説'));
+          var ml = el('ul', 'advice');
+          Th.MYTHS.forEach(function (m) { ml.appendChild(el('li', null, m)); });
+          box.appendChild(ml);
+        }
+        if (sec.id === 'stats') {
+          var rbox = el('div');
+          Th.ROADMAP.forEach(function (r) {
+            var c = el('div', 'phase-box');
+            c.appendChild(el('b', null, r.phase + '（' + r.rank + '）'));
+            c.appendChild(el('div', null, 'スタッツ目標: ' + r.stats));
+            c.appendChild(el('div', null, '習得すべき技術: ' + r.core));
+            c.appendChild(el('div', 'hint', r.how));
+            rbox.appendChild(c);
+          });
+          box.appendChild(rbox);
+        }
+        box.hidden = idx !== 0;
+        bodies[sec.id] = box;
+        panel.appendChild(box);
+      });
+      nav.children[0].setAttribute('aria-pressed', 'true');
+      if (jumpId && bodies[jumpId]) {
+        Object.keys(bodies).forEach(function (k) { bodies[k].hidden = k !== jumpId; });
+        Array.prototype.forEach.call(nav.children, function (c, i) {
+          c.setAttribute('aria-pressed', Th.SECTIONS[i].id === jumpId ? 'true' : 'false');
+        });
+      }
+      var wrap = el('div', 'actionbar');
+      var b2 = el('button', 'btn primary', '閉じる');
+      b2.onclick = function () { close(); };
+      wrap.appendChild(b2);
+      panel.appendChild(wrap);
+    }, { wide: true });
+  }
+
   /* ---------- 進行 ---------- */
   function sleep(ms) { return new Promise(function (r) { setTimeout(r, ms); }); }
 
@@ -702,6 +881,7 @@
       case 'hand-start':
         state.prevScores = gs.players.map(function (p) { return p.score; });
         state.feedback = null;
+        state.calledThisHand = false;
         render();
         await sleep(240);
         break;
@@ -718,6 +898,10 @@
         else { state.rec.meta.riichi++; render(); }
         break;
       case 'call':
+        if (e.player === 0 && !state.calledThisHand) { state.calledThisHand = true; state.rec.meta.callHands++; }
+        render();
+        await sleep(Math.max(150, cfg.speed * 0.8));
+        break;
       case 'kan':
         render();
         await sleep(Math.max(150, cfg.speed * 0.8));
@@ -826,6 +1010,9 @@
       var b = el('button', 'btn primary', '対局開始');
       b.onclick = function () { close(); startGame(); };
       wrap.appendChild(b);
+      var bt = el('button', 'btn ghost', '理論ガイド');
+      bt.onclick = function () { theoryScreen(); };
+      wrap.appendChild(bt);
       panel.appendChild(wrap);
       panel.appendChild(el('p', 'hint',
         '赤ドラあり / 喰いタンあり / 後付けあり。符・役・裏ドラまで計算します。'));
