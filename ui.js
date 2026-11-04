@@ -1,0 +1,836 @@
+/* UI: 卓の描画 / 人間プレイヤーの操作 / 検討レポート */
+(function () {
+  'use strict';
+  var C = MJCore, S = MJScore, Gm = MJGame, AI = MJAI, R = MJReview;
+
+  var SEAT_LABEL = ['自分', '下家', '対面', '上家'];
+  var WIND_CH = { 27: '東', 28: '南', 29: '西', 30: '北' };
+  var HONOR = ['東', '南', '西', '北', '白', '發', '中'];
+
+  var cfg = {
+    length: 'tonpuu', strength: 'normal', aka: true,
+    assist: true, instant: true, speed: 520
+  };
+  try {
+    var saved = JSON.parse(localStorage.getItem('mj-cfg') || 'null');
+    if (saved) Object.assign(cfg, saved);
+  } catch (e) { }
+  function saveCfg() { try { localStorage.setItem('mj-cfg', JSON.stringify(cfg)); } catch (e) { } }
+
+  var app = document.getElementById('app');
+  var state = {
+    game: null, gs: null, view: null, mode: 'idle',
+    opts: null, callOpts: null, resolve: null,
+    feedback: null, rec: null, handLog: [], prevScores: null, running: false
+  };
+
+  /* ---------- DOM ---------- */
+  function el(tag, cls, text) {
+    var e = document.createElement(tag);
+    if (cls) e.className = cls;
+    if (text != null) e.textContent = text;
+    return e;
+  }
+  function tileNode(type, o) {
+    o = o || {};
+    var t = el('span', 'tile');
+    if (o.cls) t.className += ' ' + o.cls;
+    if (type == null) { t.className += ' back'; t.appendChild(el('b', null, '')); return t; }
+    if (type >= 27) {
+      t.className += ' honor';
+      if (type === 31) t.className += ' dragon-haku';
+      if (type === 32) t.className += ' dragon-hatsu';
+      if (type === 33) t.className += ' dragon-chun';
+      t.appendChild(el('b', null, HONOR[type - 27]));
+    } else {
+      var suit = Math.floor(type / 9);
+      t.className += ' s-' + 'mps'[suit];
+      if (o.red) t.className += ' red';
+      t.appendChild(el('b', null, String(type % 9 + 1)));
+      t.appendChild(el('i', null, '萬筒索'[suit]));
+    }
+    return t;
+  }
+  function tileById(id, o) {
+    o = o || {};
+    return tileNode(C.idToType(id), Object.assign({ red: C.isRedId(id) }, o));
+  }
+  function tileText(t) { return C.typeLabel(t); }
+
+  /* ---------- 河 / 副露 ---------- */
+  function riverNode(discards) {
+    var w = el('div', 'river');
+    discards.forEach(function (d) {
+      var cls = (d.tsumogiri ? 'tsumogiri ' : '') + (d.called ? 'dim ' : '') + (d.riichi ? 'sideways' : '');
+      w.appendChild(tileById(d.id, { cls: cls }));
+    });
+    return w;
+  }
+  function meldsNode(melds, small) {
+    var w = el('div', 'melds');
+    melds.forEach(function (m) {
+      var g = el('div', 'meld');
+      var ids = m.tiles.slice();
+      ids.sort(function (a, b) { return C.idToType(a) - C.idToType(b); });
+      ids.forEach(function (id, i) {
+        var cls = '';
+        if (m.type === 'kan' && m.closed && (i === 0 || i === 3)) {
+          g.appendChild(tileNode(null));
+          return;
+        }
+        if (id === m.called) cls = 'sideways';
+        g.appendChild(tileById(id, { cls: cls }));
+      });
+      w.appendChild(g);
+    });
+    return w;
+  }
+
+  /* ---------- 画面構築 ---------- */
+  function render() {
+    if (!state.view) return;
+    var v = state.view;
+    app.innerHTML = '';
+
+    // --- 情報バー ---
+    var bar = el('div', 'topbar');
+    bar.appendChild(el('div', 'round', WIND_CH[v.roundWind] + v.kyoku + '局 ' + v.honba + '本場'));
+    var dora = el('div', 'dora-box');
+    dora.appendChild(el('span', 'chip', 'ドラ'));
+    v.doraInd.forEach(function (t) { dora.appendChild(tileNode(C.doraFromIndicator(t))); });
+    bar.appendChild(dora);
+    bar.appendChild(el('span', 'chip', '残' + v.wallLeft));
+    if (v.kyotaku) bar.appendChild(el('span', 'chip warn', '供託' + v.kyotaku * 1000));
+    if (v.furiten) bar.appendChild(el('span', 'chip warn', 'フリテン'));
+    bar.appendChild(el('div', 'spacer'));
+    var bAssist = el('button', 'icon-btn', 'アシスト');
+    bAssist.setAttribute('aria-pressed', cfg.assist ? 'true' : 'false');
+    bAssist.onclick = function () { cfg.assist = !cfg.assist; saveCfg(); render(); };
+    bar.appendChild(bAssist);
+    var bInst = el('button', 'icon-btn', '即時指摘');
+    bInst.setAttribute('aria-pressed', cfg.instant ? 'true' : 'false');
+    bInst.onclick = function () { cfg.instant = !cfg.instant; saveCfg(); render(); };
+    bar.appendChild(bInst);
+    var bRep = el('button', 'icon-btn', '検討');
+    bRep.onclick = function () { showReport(false); };
+    bar.appendChild(bRep);
+    app.appendChild(bar);
+
+    // --- 他家 ---
+    var opp = el('div', 'opponents');
+    [1, 2, 3].forEach(function (k) {
+      var p = (v.me + k) % 4;
+      var pd = v.players[p];
+      var seat = el('div', 'seat');
+      var head = el('div', 'seat-head');
+      head.appendChild(el('span', 'seat-name', SEAT_LABEL[k]));
+      head.appendChild(el('span', 'seat-wind', WIND_CH[pd.seatWind] + (p === v.oya ? '(親)' : '')));
+      if (pd.riichi) head.appendChild(el('span', 'riichi-badge', 'リーチ'));
+      head.appendChild(el('span', 'seat-score', pd.score.toLocaleString()));
+      seat.appendChild(head);
+      if (pd.melds.length) seat.appendChild(meldsNode(pd.melds));
+      seat.appendChild(riverNode(pd.discards));
+      opp.appendChild(seat);
+    });
+    var table = el('div', 'table');
+    table.appendChild(opp);
+
+    // --- 自分の河 + アシスト ---
+    var crow = el('div', 'center-row');
+    var mr = el('div', 'my-river');
+    var mh = el('div', 'seat-head');
+    mh.appendChild(el('span', 'seat-name', '自分の河'));
+    mh.appendChild(el('span', 'seat-wind', WIND_CH[v.seatWind] + (v.me === v.oya ? '(親)' : '')));
+    if (v.riichi) mh.appendChild(el('span', 'riichi-badge', 'リーチ'));
+    mh.appendChild(el('span', 'seat-score', v.scores[v.me].toLocaleString()));
+    mr.appendChild(mh);
+    mr.appendChild(riverNode(v.players[v.me].discards));
+    crow.appendChild(mr);
+
+    if (cfg.assist) crow.appendChild(assistNode(v));
+    table.appendChild(crow);
+    table.appendChild(compassNode(v));
+    app.appendChild(table);
+
+    // --- 手牌 ---
+    var hz = el('div', 'handzone');
+    if (v.melds.length) {
+      var mm = el('div', 'my-melds');
+      mm.appendChild(meldsNode(v.melds));
+      hz.appendChild(mm);
+    }
+    hz.appendChild(handRow(v));
+    hz.appendChild(actionBar(v));
+    app.appendChild(hz);
+  }
+
+  function analysisNow(v) {
+    var counts = C.countsFromIds(v.hand);
+    var melds = v.melds.length;
+    if (C.sumCounts(counts) % 3 === 2) {
+      var cands = C.discardOptions(counts, melds, v.seen);
+      return { type: 14, cands: cands, best: cands[0] };
+    }
+    var u = C.ukeire(counts, melds, v.seen);
+    return { type: 13, shanten: u.shanten, ukeire: u.total, tiles: u.tiles };
+  }
+
+  function assistNode(v) {
+    var box = el('div', 'assist-box');
+    var a = analysisNow(v);
+    box.appendChild(el('div', 'lbl', '手牌情報'));
+    if (a.type === 14 && a.best) {
+      var sh = a.best.shanten;
+      var line = el('div');
+      line.innerHTML = (sh < 0 ? '<b>和了</b>' : sh === 0 ? '<b>テンパイ</b>' : '<b>' + sh + '向聴</b>');
+      box.appendChild(line);
+      var best = a.cands.filter(function (c) { return c.shanten === sh; })
+        .sort(function (x, y) { return y.ukeire - x.ukeire; })[0];
+      if (best) {
+        var d = el('div');
+        d.innerHTML = '推奨打: <b>' + tileText(best.tile) + '</b> → 受け入れ <b>' + best.ukeire + '</b>枚';
+        box.appendChild(d);
+        box.appendChild(el('div', null, best.tiles.slice(0, 8).map(function (x) {
+          return tileText(x.type) + '×' + x.count;
+        }).join(' ') + (best.tiles.length > 8 ? ' 他' + (best.tiles.length - 8) + '種' : '')));
+      }
+    } else {
+      var l2 = el('div');
+      l2.innerHTML = (a.shanten === 0 ? '<b>テンパイ</b>' : '<b>' + a.shanten + '向聴</b>')
+        + ' / 受け入れ <b>' + a.ukeire + '</b>枚';
+      box.appendChild(l2);
+      if (a.shanten === 0 && v.waits.length) {
+        box.appendChild(el('div', null, '待ち: ' + v.waits.map(tileText).join('・')));
+      }
+    }
+    var riichiPlayers = v.players.filter(function (p) { return p.riichi && p.idx !== v.me; });
+    if (riichiPlayers.length) {
+      box.appendChild(el('div', 'lbl', '警戒'));
+      box.appendChild(el('div', null, riichiPlayers.map(function (p) {
+        return SEAT_LABEL[(p.idx - v.me + 4) % 4];
+      }).join('・') + ' がリーチ中（安全牌に🛡）'));
+    }
+    return box;
+  }
+
+
+  // 卓中央の場況表示
+  function compassNode(v) {
+    var wrap = el('div', 'felt-center');
+    var c = el('div', 'compass');
+    function pcell(k, cls) {
+      var p = (v.me + k) % 4;
+      var pd = v.players[p];
+      var d = el('div', 'pscore ' + cls + (p === v.oya ? ' dealer' : ''));
+      var w = el('span', 'w', WIND_CH[pd.seatWind]);
+      d.appendChild(w);
+      d.appendChild(el('span', 'sc', pd.score.toLocaleString()));
+      d.appendChild(el('div', 'nm', k === 0 ? '自分' : SEAT_LABEL[k]));
+      if (pd.riichi) d.appendChild(el('div', 'stick', ''));
+      return d;
+    }
+    c.appendChild(el('div', 'c-blank'));
+    c.appendChild(pcell(2, 'top'));
+    c.appendChild(el('div', 'c-blank'));
+    c.appendChild(pcell(3, 'left'));
+    var mid = el('div', 'c-center');
+    mid.appendChild(el('div', 'c-round', WIND_CH[v.roundWind] + v.kyoku + '局'));
+    mid.appendChild(el('div', 'c-sub', v.honba + '本場' + (v.kyotaku ? ' / 供託' + v.kyotaku : '')));
+    mid.appendChild(el('div', 'c-sub', '残り ' + v.wallLeft + '枚'));
+    c.appendChild(mid);
+    c.appendChild(pcell(1, 'right'));
+    c.appendChild(el('div', 'c-blank'));
+    c.appendChild(pcell(0, 'bottom'));
+    c.appendChild(el('div', 'c-blank'));
+    wrap.appendChild(c);
+    return wrap;
+  }
+
+  function handRow(v) {
+    var row = el('div', 'hand-row');
+    var clickable = (state.mode === 'turn' || state.mode === 'riichi-select');
+    var allowed = {};
+    if (state.mode === 'turn') state.opts.discardable.forEach(function (id) { allowed[id] = 1; });
+    if (state.mode === 'riichi-select') state.opts.riichiTiles.forEach(function (id) { allowed[id] = 1; });
+
+    var rec = null, dangerMap = {};
+    if (cfg.assist && clickable) {
+      var a = analysisNow(v);
+      if (a.type === 14 && a.best) {
+        var sh = a.best.shanten;
+        rec = a.cands.filter(function (c) { return c.shanten === sh; })
+          .sort(function (x, y) { return y.ukeire - x.ukeire; })[0];
+      }
+      var threat = AI.anyThreat(v);
+      if (threat) {
+        v.hand.forEach(function (id) { dangerMap[C.idToType(id)] = AI.tileDanger(v, C.idToType(id)); });
+      }
+    }
+
+    var hand = v.hand.slice();
+    var drawn = v.drawn;
+    var rest = hand.filter(function (id) { return id !== drawn; });
+    function tileButton(id, isDrawn) {
+      var btn = el('button', 'tile-btn');
+      var ok = clickable && allowed[id];
+      if (ok) btn.className += ' clickable';
+      var t = C.idToType(id);
+      btn.appendChild(tileById(id, {
+        cls: (clickable && !allowed[id] ? 'dim' : '') + (isDrawn ? ' just' : '')
+      }));
+      if (cfg.assist && clickable && allowed[id]) {
+        if (rec && t === rec.tile) {
+          var b = el('span', 'badge rec', '推奨');
+          btn.appendChild(b);
+        } else if (dangerMap[t] != null) {
+          if (dangerMap[t] < 0.05) btn.appendChild(el('span', 'badge safe', '🛡'));
+          else if (dangerMap[t] >= 0.5) btn.appendChild(el('span', 'badge danger', '危'));
+        }
+      }
+      if (ok) {
+        btn.onclick = function () {
+          if (state.mode === 'riichi-select') finishTurn({ type: 'riichi', tile: id });
+          else finishTurn({ type: 'discard', tile: id });
+        };
+      }
+      btn.setAttribute('aria-label', tileText(t) + (ok ? ' を切る' : ''));
+      return btn;
+    }
+    rest.forEach(function (id) { row.appendChild(tileButton(id, false)); });
+    if (drawn != null) {
+      row.appendChild(el('div', 'gap'));
+      row.appendChild(tileButton(drawn, true));
+    }
+    return row;
+  }
+
+  function actionBar(v) {
+    var bar = el('div', 'actionbar');
+    var o = state.opts, co = state.callOpts;
+    function add(label, cls, fn) {
+      var b = el('button', 'btn ' + (cls || ''), label);
+      b.onclick = fn;
+      bar.appendChild(b);
+      return b;
+    }
+    if (state.mode === 'turn' && o) {
+      if (o.canTsumo) add('ツモ', 'primary', function () { finishTurn({ type: 'tsumo' }); });
+      if (o.canRiichi) add('リーチ', 'danger', function () {
+        state.mode = 'riichi-select';
+        state.feedback = { cls: '', tag: 'リーチ', text: '聴牌を保てる牌を選んでください（' + o.riichiTiles.map(function (id) { return tileText(C.idToType(id)); }).join('・') + '）' };
+        render();
+      });
+      o.kans.forEach(function (k) {
+        add((k.kind === 'ankan' ? '暗槓 ' : '加槓 ') + tileText(k.tile), '', function () {
+          finishTurn({ type: 'kan', kind: k.kind, tile: k.tile });
+        });
+      });
+      if (o.canKyuushu) add('九種九牌', '', function () { finishTurn({ type: 'kyuushu' }); });
+      if (!o.canTsumo) bar.appendChild(el('span', 'hint', '切る牌をタップ'));
+    } else if (state.mode === 'riichi-select') {
+      add('やめる', 'ghost', function () { state.mode = 'turn'; state.feedback = null; render(); });
+    } else if (state.mode === 'call' && co) {
+      if (co.canRon) add('ロン', 'primary', function () { finishCall({ type: 'ron' }); });
+      if (co.canPon) add('ポン', '', function () { finishCall({ type: 'pon', tiles: co.ponTiles }); });
+      if (co.canKan) add('カン', '', function () { finishCall({ type: 'kan', tiles: co.kanTiles }); });
+      co.chi.forEach(function (ch) {
+        add('チー ' + ch.types.map(tileText).join('+'), '', function () {
+          finishCall({ type: 'chi', tiles: ch.tiles });
+        });
+      });
+      add('パス', 'ghost', function () { finishCall({ type: 'pass' }); });
+    } else {
+      bar.appendChild(el('span', 'hint', state.running ? '他家の手番…' : ''));
+    }
+    if (state.feedback) {
+      var f = el('div', 'feedback ' + (state.feedback.cls || ''));
+      var tag = el('span', 'tag', state.feedback.tag);
+      f.appendChild(tag);
+      f.appendChild(document.createTextNode(state.feedback.text));
+      bar.appendChild(f);
+    }
+    return bar;
+  }
+
+  /* ---------- 操作の解決 ---------- */
+  function finishTurn(action, forced) {
+    var v = state.view, o = state.opts, rec = state.rec;
+    var r;
+    if (!forced && (action.type === 'discard' || action.type === 'riichi')) {
+      if (o.canTsumo) rec.push(rec.winMissRecord(v, 'ツモ', o.tsumoResult));
+      if (action.type === 'discard' && o.canRiichi) {
+        var rs = rec.analyzeRiichiSkip(v, o, action.tile);
+        if (rs) rec.push(rs);
+      }
+      r = rec.analyzeDiscard(v, o, action.tile);
+      if (r) rec.push(r);
+      showFeedback(r, action.type === 'riichi');
+    }
+    var res = state.resolve;
+    state.mode = 'idle'; state.opts = null; state.resolve = null;
+    render();
+    res(action);
+  }
+  function finishCall(action) {
+    var v = state.view, o = state.callOpts, rec = state.rec;
+    if (o.canRon && action.type !== 'ron') {
+      rec.push(rec.winMissRecord(v, 'ロン', o.ronResult));
+      state.feedback = { cls: 'bad', tag: '見逃し', text: 'ロンを見逃しました。以降この待ちはフリテンになります。' };
+    } else {
+      var c = rec.analyzeCall(v, o, action);
+      if (c) { rec.push(c); showFeedback(c); }
+      else if (action.type !== 'pass') state.feedback = null;
+    }
+    var res = state.resolve;
+    state.mode = 'idle'; state.callOpts = null; state.resolve = null;
+    render();
+    res(action);
+  }
+
+  function showFeedback(r, isRiichi) {
+    if (!cfg.instant || !r) { state.feedback = null; return; }
+    var cls = 'good', tag = '◎ 最適';
+    if (r.severity === 'high') { cls = 'bad'; tag = '✗ ミス'; }
+    else if (r.severity === 'mid') { cls = 'mid'; tag = '△ 要改善'; }
+    else if (r.severity === 'low') { cls = 'mid'; tag = '△ 検討'; }
+    else if (r.category === 'near') { cls = 'good'; tag = '○ ほぼ最適'; }
+    else if (r.category === 'ok-fold' || r.category === 'ok-push') { cls = 'good'; tag = '○ 判断OK'; }
+    state.feedback = { cls: cls, tag: (isRiichi ? 'リーチ宣言 / ' : '') + tag, text: r.comment };
+  }
+
+  /* ---------- 人間コントローラ ---------- */
+  function humanController() {
+    return {
+      turnAction: function (v, o) {
+        state.view = v; state.opts = o; state.mode = 'turn';
+        if (!o.canTsumo && !o.canRiichi && !o.kans.length && o.discardable.length === 1) {
+          // 選択肢なし(リーチ後のツモ切り)
+          return new Promise(function (res) {
+            state.mode = 'turn'; state.resolve = res; render();
+            setTimeout(function () {
+              if (state.mode === 'turn' && state.resolve === res) finishTurn({ type: 'discard', tile: o.discardable[0] }, true);
+            }, Math.max(260, cfg.speed * 0.5));
+          });
+        }
+        return new Promise(function (res) { state.resolve = res; render(); });
+      },
+      callAction: function (v, o) {
+        state.view = v;
+        if (!o.canRon && !o.canPon && !o.canKan && !o.chi.length) return { type: 'pass' };
+        state.callOpts = o; state.mode = 'call';
+        return new Promise(function (res) { state.resolve = res; render(); });
+      }
+    };
+  }
+
+  /* ---------- オーバーレイ ---------- */
+  function overlay(build, opts) {
+    return new Promise(function (resolve) {
+      var ov = el('div', 'overlay');
+      var panel = el('div', 'panel' + (opts && opts.wide ? ' wide' : ''));
+      ov.appendChild(panel);
+      function close(val) { ov.remove(); resolve(val); }
+      build(panel, close);
+      document.body.appendChild(ov);
+      var first = panel.querySelector('button');
+      if (first) first.focus();
+    });
+  }
+
+  function scoreDeltaTable(before, after, labels) {
+    var t = el('table', 'score-table');
+    var thead = el('tr');
+    ['', '点数', '増減'].forEach(function (h) { thead.appendChild(el('th', null, h)); });
+    t.appendChild(thead);
+    for (var p = 0; p < 4; p++) {
+      var tr = el('tr');
+      tr.appendChild(el('td', null, labels[p]));
+      tr.appendChild(el('td', null, after[p].toLocaleString()));
+      var d = after[p] - before[p];
+      var td = el('td', d > 0 ? 'delta-plus' : (d < 0 ? 'delta-minus' : null), (d > 0 ? '+' : '') + d.toLocaleString());
+      tr.appendChild(td);
+      t.appendChild(tr);
+    }
+    return t;
+  }
+
+  function labelsFor(v) {
+    var out = [];
+    for (var p = 0; p < 4; p++) {
+      var k = (p - 0 + 4) % 4;
+      out[p] = SEAT_LABEL[k] + '(' + WIND_CH[state.game.seatWind(p)] + ')';
+    }
+    return out;
+  }
+
+  async function showAgari(e) {
+    var rec = state.rec;
+    var me = 0;
+    // 検討用の記録
+    if (e.kind === 'ron' && e.loser === me) {
+      var last = null;
+      for (var i = rec.records.length - 1; i >= 0; i--) if (rec.records[i].kind === 'discard') { last = rec.records[i]; break; }
+      var avoidable = !!(last && last.safeOptions && last.safeOptions.length && last.danger >= 0.3);
+      rec.meta.dealIns.push({ kyoku: e.kyoku, avoidable: avoidable, tile: e.winTile });
+      rec.push({
+        kind: 'dealin', kyoku: e.kyoku, roundWind: e.roundWind, go: last ? last.go : 0,
+        hand: last ? last.hand : [], melds: last ? last.melds : [], chosen: C.idToType(e.winTile),
+        severity: avoidable ? 'high' : 'low', category: 'dealin',
+        comment: R.rel({ me: me }, e.winner) + 'に ' + e.result.points + '点の放銃（'
+          + e.result.yaku.map(function (y) { return y.name; }).join('・') + '）。'
+          + (avoidable
+            ? '切った' + tileText(C.idToType(e.winTile)) + 'は無筋で、現物が ' + last.safeOptions.map(tileText).join('・') + ' にありました。'
+            : '読みにくい牌での放銃で、避けるのは難しい局面でした。')
+      });
+    }
+    if (e.winner === me) rec.meta.wins.push({ kyoku: e.kyoku, points: e.gained, result: e.result });
+    state.handLog.push({
+      kyoku: WIND_CH[e.roundWind] + e.kyoku + '局' + (e.honba ? ' ' + e.honba + '本場' : ''),
+      text: (e.winner === me ? '自分の' : SEAT_LABEL[(e.winner - me + 4) % 4] + 'の')
+        + (e.kind === 'tsumo' ? 'ツモ' : 'ロン') + ' ' + (e.result.name ? e.result.name + ' ' : '')
+        + e.result.han + '翻' + (e.result.yakuman ? '' : e.result.fu + '符') + ' ' + e.gained + '点'
+        + (e.kind === 'ron' && e.loser === me ? '（自分の放銃）' : ''),
+      delta: (e.scores[me] - state.prevScores[me])
+    });
+
+    var before = state.prevScores, after = e.scores;
+    await overlay(function (panel, close) {
+      var head = (e.winner === 0 ? 'あなたの' : SEAT_LABEL[(e.winner) % 4] + 'の')
+        + (e.kind === 'tsumo' ? 'ツモ和了' : 'ロン和了');
+      panel.appendChild(el('h2', null, head));
+      panel.appendChild(el('div', 'hint', WIND_CH[e.roundWind] + e.kyoku + '局 ' + e.honba + '本場'));
+
+      var hv = el('div', 'result-hand');
+      var ids = e.hand.slice();
+      ids.sort(function (a, b) { return C.idToType(a) - C.idToType(b); });
+      if (e.kind === 'ron') ids.push(e.winTile);
+      ids.forEach(function (id, i) {
+        var isWin = e.kind === 'ron' ? (i === ids.length - 1) : (id === e.winTile);
+        hv.appendChild(tileById(id, { cls: isWin ? 'ron-tile' : '' }));
+      });
+      panel.appendChild(hv);
+      if (e.melds && e.melds.length) panel.appendChild(meldsNode(e.melds));
+      panel.appendChild(el('div', 'hint', (e.kind === 'ron' ? 'ロン牌' : 'ツモ牌') + ': '
+        + tileText(C.idToType(e.winTile)) + '（赤枠）'));
+
+      var dl = el('div', 'dora-box');
+      dl.appendChild(el('span', 'chip', 'ドラ'));
+      e.doraInd.forEach(function (t) { dl.appendChild(tileNode(C.doraFromIndicator(t))); });
+      if (e.ura && e.ura.length) {
+        dl.appendChild(el('span', 'chip', '裏'));
+        e.ura.forEach(function (t) { dl.appendChild(tileNode(t)); });
+      }
+      panel.appendChild(dl);
+
+      panel.appendChild(el('h3', null, '役'));
+      var yl = el('div', 'yaku-list');
+      e.result.yaku.forEach(function (y) {
+        var row = el('div', 'row');
+        row.appendChild(el('span', null, y.name));
+        row.appendChild(el('span', null, y.yakuman ? '役満' : y.han + '翻'));
+        yl.appendChild(row);
+      });
+      panel.appendChild(yl);
+      var pts = el('div', 'pts', (e.result.name ? e.result.name + ' ' : '')
+        + (e.result.yakuman ? '' : e.result.han + '翻' + e.result.fu + '符 ') + e.result.points + '点');
+      if (e.gained !== e.result.points) {
+        pts.appendChild(el('small', null, '受取 ' + e.gained.toLocaleString() + '点（本場・供託込み）'));
+      }
+      panel.appendChild(pts);
+
+      panel.appendChild(el('h3', null, '点数'));
+      panel.appendChild(scoreDeltaTable(before, after, labelsFor()));
+      var b = el('button', 'btn primary', '次へ');
+      b.onclick = function () { close(); };
+      var wrap = el('div', 'actionbar');
+      wrap.appendChild(b);
+      panel.appendChild(wrap);
+    });
+  }
+
+  async function showRyuukyoku(e) {
+    var me = 0;
+    state.handLog.push({
+      kyoku: WIND_CH[e.roundWind] + e.kyoku + '局' + (e.honba ? ' ' + e.honba + '本場' : ''),
+      text: e.reason === 'kyuushu' ? '九種九牌で流局'
+        : '流局（テンパイ: ' + (e.tenpai.length ? e.tenpai.map(function (p) { return SEAT_LABEL[(p - me + 4) % 4]; }).join('・') : 'なし') + '）',
+      delta: e.scores[me] - state.prevScores[me]
+    });
+    if (e.tenpai.indexOf(0) >= 0) state.rec.meta.tenpai++;
+    var before = state.prevScores;
+    await overlay(function (panel, close) {
+      panel.appendChild(el('h2', null, e.reason === 'kyuushu' ? '九種九牌' : '流局'));
+      panel.appendChild(el('p', null, e.tenpai.length
+        ? 'テンパイ: ' + e.tenpai.map(function (p) { return SEAT_LABEL[(p - 0 + 4) % 4]; }).join('・')
+        : '全員ノーテン'));
+      var mine = e.hands[0].slice().sort(function (a, b) { return C.idToType(a) - C.idToType(b); });
+      var hv = el('div', 'result-hand');
+      mine.forEach(function (id) { hv.appendChild(tileById(id)); });
+      panel.appendChild(hv);
+      panel.appendChild(scoreDeltaTable(before, e.scores, labelsFor()));
+      var wrap = el('div', 'actionbar');
+      var b = el('button', 'btn primary', '次へ');
+      b.onclick = function () { close(); };
+      wrap.appendChild(b);
+      panel.appendChild(wrap);
+    });
+  }
+
+  /* ---------- 検討レポート ---------- */
+  function mistakeNode(m) {
+    var box = el('div', 'mistake ' + m.severity);
+    var head = el('div', 'mhead');
+    var sevText = m.severity === 'high' ? '重大' : m.severity === 'mid' ? '要改善' : '検討';
+    var catText = {
+      shanten: '牌効率(シャンテン戻し)', efficiency: '牌効率(受け入れ)', push: '押し引き',
+      'win-miss': '和了見逃し', riichi: 'リーチ判断', call: '鳴き判断', dealin: '放銃'
+    }[m.category] || m.category;
+    head.appendChild(el('span', 'sev', sevText));
+    head.appendChild(el('span', null, (m.roundWind ? WIND_CH[m.roundWind] : '') + m.kyoku + '局 ' + (m.go ? m.go + '巡目' : '')));
+    head.appendChild(el('span', null, catText));
+    box.appendChild(head);
+    box.appendChild(el('div', 'cmt', m.comment));
+    if (m.hand && m.hand.length) {
+      var hv = el('div', 'hand-view');
+      var ids = m.hand.slice().sort(function (a, b) { return C.idToType(a) - C.idToType(b); });
+      ids.forEach(function (id) {
+        var t = C.idToType(id);
+        var cls = '';
+        if (m.chosen != null && t === m.chosen) cls = 'ron-tile';
+        else if (m.recommend != null && t === m.recommend) cls = 'marked';
+        hv.appendChild(tileById(id, { cls: cls }));
+      });
+      if (m.melds && m.melds.length) hv.appendChild(meldsNode(m.melds));
+      box.appendChild(hv);
+      if (m.kind === 'discard') {
+        var lg = el('div', 'legend');
+        lg.appendChild(el('span', 'l-bad', '選んだ牌: ' + tileText(m.chosen)));
+        if (m.recommend != null && m.recommend !== m.chosen) lg.appendChild(el('span', 'l-rec', '推奨: ' + tileText(m.recommend)));
+        box.appendChild(lg);
+      }
+    }
+    return box;
+  }
+
+  function showReport(isFinal) {
+    var rep = state.rec.report();
+    var s = rep.summary;
+    return overlay(function (panel, close) {
+      panel.appendChild(el('h2', null, isFinal ? '対局終了 / 検討レポート' : '途中検討'));
+      if (isFinal && state.gs) {
+        var order = state.gs.players.map(function (p, i) { return { i: i, s: p.score }; })
+          .sort(function (a, b) { return b.s - a.s; });
+        var myRank = order.findIndex(function (x) { return x.i === 0; }) + 1;
+        panel.appendChild(el('p', null, '最終 ' + myRank + '位 / ' + state.gs.players[0].score.toLocaleString() + '点'));
+      }
+      panel.appendChild(el('h3', null, '成績'));
+      var grid = el('div', 'stat-grid');
+      function stat(k, v, sub) {
+        var b = el('div', 'stat');
+        b.appendChild(el('div', 'k', k));
+        var vv = el('div', 'v');
+        vv.textContent = v;
+        if (sub) { var sm = el('small', null, ' ' + sub); vv.appendChild(sm); }
+        b.appendChild(vv);
+        return b;
+      }
+      grid.appendChild(stat('最適打率', s.optimalRate + '%', s.optimalCount + '/' + s.discardCount));
+      grid.appendChild(stat('平均受け入れロス', s.avgUkeireLoss, '枚'));
+      grid.appendChild(stat('重大ミス', s.severity.high, '回'));
+      grid.appendChild(stat('要改善', s.severity.mid, '回'));
+      grid.appendChild(stat('和了', s.wins, '回'));
+      grid.appendChild(stat('放銃', s.dealIns, '回'));
+      grid.appendChild(stat('リーチ', s.riichiCount, '回'));
+      grid.appendChild(stat('局数', s.hands, '局'));
+      panel.appendChild(grid);
+
+      panel.appendChild(el('h3', null, '総評'));
+      var ul = el('ul', 'advice');
+      rep.advice.forEach(function (a) { ul.appendChild(el('li', null, a)); });
+      panel.appendChild(ul);
+
+      if (state.handLog.length) {
+        panel.appendChild(el('h3', null, '局の記録'));
+        var t = el('table', 'score-table');
+        state.handLog.forEach(function (h) {
+          var tr = el('tr');
+          tr.appendChild(el('td', null, h.kyoku));
+          tr.appendChild(el('td', null, h.text));
+          tr.appendChild(el('td', h.delta > 0 ? 'delta-plus' : (h.delta < 0 ? 'delta-minus' : null),
+            (h.delta > 0 ? '+' : '') + h.delta.toLocaleString()));
+          t.appendChild(tr);
+        });
+        panel.appendChild(t);
+      }
+
+      panel.appendChild(el('h3', null, '指摘（' + rep.mistakes.length + '件）'));
+      if (!rep.mistakes.length) panel.appendChild(el('p', null, '指摘なし。良い打牌が続いています。'));
+      var shown = rep.mistakes.slice(0, 40);
+      shown.forEach(function (m) { panel.appendChild(mistakeNode(m)); });
+      if (rep.mistakes.length > shown.length) {
+        panel.appendChild(el('p', 'hint', '他 ' + (rep.mistakes.length - shown.length) + ' 件'));
+      }
+
+      var wrap = el('div', 'actionbar');
+      if (isFinal) {
+        var again = el('button', 'btn primary', 'もう一度対局');
+        again.onclick = function () { close(); startScreen(); };
+        wrap.appendChild(again);
+      } else {
+        var back = el('button', 'btn primary', '対局に戻る');
+        back.onclick = function () { close(); };
+        wrap.appendChild(back);
+        var quit = el('button', 'btn ghost', '最初から');
+        quit.onclick = function () {
+          state.running = false;
+          if (state.resolve) { var r = state.resolve; state.resolve = null; state.mode = 'idle'; r({ type: 'pass' }); }
+          close(); startScreen();
+        };
+        wrap.appendChild(quit);
+      }
+      panel.appendChild(wrap);
+    }, { wide: true });
+  }
+
+  /* ---------- 進行 ---------- */
+  function sleep(ms) { return new Promise(function (r) { setTimeout(r, ms); }); }
+
+  async function onEvent(e, gs) {
+    state.gs = gs;
+    if (state.game) state.view = state.game.view(0);
+    switch (e.type) {
+      case 'hand-start':
+        state.prevScores = gs.players.map(function (p) { return p.score; });
+        state.feedback = null;
+        render();
+        await sleep(240);
+        break;
+      case 'draw':
+        render();
+        if (e.player !== 0) await sleep(Math.max(40, cfg.speed * 0.18));
+        break;
+      case 'discard':
+        render();
+        if (e.player !== 0) await sleep(Math.max(90, cfg.speed * 0.55));
+        break;
+      case 'riichi':
+        if (e.player !== 0) { render(); await sleep(cfg.speed); }
+        else { state.rec.meta.riichi++; render(); }
+        break;
+      case 'call':
+      case 'kan':
+        render();
+        await sleep(Math.max(150, cfg.speed * 0.8));
+        break;
+      case 'dora':
+        render();
+        break;
+      case 'agari':
+        state.mode = 'idle'; render();
+        await showAgari(e);
+        break;
+      case 'ryuukyoku':
+        state.mode = 'idle'; render();
+        await showRyuukyoku(e);
+        break;
+      case 'hand-end':
+        state.rec.meta.hands++;
+        break;
+      case 'game-end':
+        state.running = false;
+        render();
+        await showReport(true);
+        break;
+    }
+  }
+
+  function startGame() {
+    state.rec = R.createRecorder();
+    state.handLog = [];
+    state.running = true;
+    var ais = [1, 2, 3].map(function () { return AI.create({ strength: cfg.strength }); });
+    var game = Gm.createGame({
+      rule: { length: cfg.length, aka: cfg.aka, kuitan: true },
+      controllers: [humanController()].concat(ais),
+      onEvent: onEvent
+    });
+    state.game = game;
+    state.view = game.view(0);
+    render();
+    game.run().catch(function (err) {
+      console.error(err);
+      overlay(function (panel, close) {
+        panel.appendChild(el('h2', null, 'エラーが発生しました'));
+        panel.appendChild(el('p', null, String(err && err.message || err)));
+        var w = el('div', 'actionbar');
+        var b = el('button', 'btn primary', '最初に戻る');
+        b.onclick = function () { close(); startScreen(); };
+        w.appendChild(b);
+        panel.appendChild(w);
+      });
+    });
+  }
+
+  /* ---------- 開始画面 ---------- */
+  function startScreen() {
+    state.view = null;
+    app.innerHTML = '';
+    overlay(function (panel, close) {
+      panel.className += ' start';
+      panel.appendChild(el('h1', null, '一人麻雀道場'));
+      panel.appendChild(el('p', 'sub',
+        'AI3人と実際に対局し、自分の打牌を1手ずつ採点します。シャンテン数・受け入れ枚数・押し引きを自動で判定し、終局後に「何がダメだったか」をまとめて指摘します。'));
+
+      function seg(label, key, items) {
+        var row = el('div', 'optrow');
+        row.appendChild(el('div', 'lab', label));
+        var g = el('div', 'seg');
+        items.forEach(function (it) {
+          var b = el('button', null, it.label);
+          b.setAttribute('aria-pressed', cfg[key] === it.v ? 'true' : 'false');
+          b.onclick = function () {
+            cfg[key] = it.v; saveCfg();
+            Array.prototype.forEach.call(g.children, function (c, i) {
+              c.setAttribute('aria-pressed', items[i].v === it.v ? 'true' : 'false');
+            });
+          };
+          g.appendChild(b);
+        });
+        row.appendChild(g);
+        panel.appendChild(row);
+      }
+      seg('ゲーム', 'length', [
+        { label: '東風戦', v: 'tonpuu' }, { label: '半荘', v: 'hanchan' }, { label: '1局のみ', v: 'one' }
+      ]);
+      seg('AIの強さ', 'strength', [
+        { label: 'やさしい', v: 'easy' }, { label: 'ふつう', v: 'normal' }
+      ]);
+      seg('進行速度', 'speed', [
+        { label: 'ゆっくり', v: 900 }, { label: 'ふつう', v: 520 }, { label: '速い', v: 220 }
+      ]);
+
+      var tog = el('div', 'optrow');
+      tog.appendChild(el('div', 'lab', '練習補助'));
+      [['assist', 'アシスト表示（向聴数・推奨打・安全牌）'], ['instant', '打牌ごとに即時指摘']].forEach(function (p) {
+        var lb = el('label', 'toggle');
+        var cb = el('input');
+        cb.type = 'checkbox'; cb.id = 'opt-' + p[0]; cb.checked = !!cfg[p[0]];
+        cb.onchange = function () { cfg[p[0]] = cb.checked; saveCfg(); };
+        lb.appendChild(cb);
+        lb.appendChild(el('span', null, p[1]));
+        tog.appendChild(lb);
+      });
+      panel.appendChild(tog);
+
+      var wrap = el('div', 'actionbar');
+      var b = el('button', 'btn primary', '対局開始');
+      b.onclick = function () { close(); startGame(); };
+      wrap.appendChild(b);
+      panel.appendChild(wrap);
+      panel.appendChild(el('p', 'hint',
+        '赤ドラあり / 喰いタンあり / 後付けあり。符・役・裏ドラまで計算します。'));
+    });
+  }
+
+  startScreen();
+})();
