@@ -67,6 +67,7 @@
     head.appendChild(el('span', 'seat-name', k === 0 ? '自分' : SEAT_LABEL[k]));
     if (p === v.oya) head.appendChild(el('span', 'oya-mark', '親'));
     if (pd.riichi) head.appendChild(el('span', 'riichi-badge', 'リーチ'));
+    if (pd.melds && pd.melds.length) head.appendChild(el('span', 'meld-badge', '鳴き' + pd.melds.length));
     head.appendChild(el('span', 'seat-score', pd.score.toLocaleString()));
     cell.appendChild(head);
     if (k !== 0 && pd.melds && pd.melds.length) cell.appendChild(meldsNode(pd.melds));
@@ -309,20 +310,21 @@
       var ok = clickable && allowed[id];
       if (ok) btn.className += ' clickable';
       var t = C.idToType(id);
-      btn.appendChild(tileById(id, {
-        cls: (clickable && !allowed[id] ? 'dim' : '') + (isDrawn ? ' just' : '')
-      }));
+      var slot = el('div', 'badge-slot');   // 牌の上に重ならないよう専用の行を確保
+      btn.appendChild(slot);
       if (cfg.assist && clickable && allowed[id]) {
         if (rec && t === rec.tile) {
-          var b = el('span', 'badge rec', '推奨');
-          btn.appendChild(b);
+          slot.appendChild(el('span', 'badge rec', '推奨'));
         } else if (dangerMap[t]) {
           var dgv = dangerMap[t];
-          if (dgv.rate <= 0.001) btn.appendChild(el('span', 'badge safe', '現物'));
-          else if (dgv.rate >= 0.06) btn.appendChild(el('span', 'badge danger', Math.round(dgv.rate * 100) + '%'));
+          if (dgv.rate <= 0.001) slot.appendChild(el('span', 'badge safe', '現物'));
+          else if (dgv.rate >= 0.06) slot.appendChild(el('span', 'badge danger', Math.round(dgv.rate * 100) + '%'));
           btn.title = dgv.label + ' 推定放銃率' + (dgv.rate * 100).toFixed(1) + '%';
         }
       }
+      btn.appendChild(tileById(id, {
+        cls: (clickable && !allowed[id] ? 'dim' : '') + (isDrawn ? ' just' : '')
+      }));
       if (ok) {
         btn.onclick = function () {
           if (state.mode === 'riichi-select') finishTurn({ type: 'riichi', tile: id });

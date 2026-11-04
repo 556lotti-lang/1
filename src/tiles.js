@@ -132,7 +132,7 @@
     var col = red ? '#d63a2f' : RED;
     var s = '';
     s += '<text x="20" y="24" text-anchor="middle" font-size="22" font-family="var(--font-display)" fill="'
-      + col + '" style="font-weight:600">' + MAN[n - 1] + '</text>';
+      + (red ? '#e03127' : INK) + '" style="font-weight:600">' + MAN[n - 1] + '</text>';
     s += '<text x="20" y="48" text-anchor="middle" font-size="21" font-family="var(--font-display)" fill="'
       + col + '" style="font-weight:600">萬</text>';
     return s;

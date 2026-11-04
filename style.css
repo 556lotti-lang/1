@@ -207,10 +207,20 @@ button { font: inherit; color: inherit; }
 .riichi-badge { background: var(--riichi); color: #fff; font-size: 9.5px; padding: 1px 4px; border-radius: 4px; }
 .seat-cell.is-riichi .seat-name { color: var(--riichi); }
 
-.melds { display: flex; gap: 5px; flex-wrap: wrap; justify-content: center; max-width: 100%; }
+.melds {
+  display: flex; gap: 7px; flex-wrap: wrap; justify-content: center; max-width: 100%;
+  padding: 3px 5px; border-radius: 8px;
+  background: color-mix(in srgb, var(--surface) 60%, transparent);
+  border: 1px solid color-mix(in srgb, var(--gold) 35%, var(--line));
+}
 .meld { display: flex; align-items: flex-end; gap: 1px; }
-.meld .tile { --tw: 16px; }
-.seat-cell.left .melds, .seat-cell.right .melds { max-width: var(--rh); }
+.meld .tile { --tw: calc(var(--rtw, 21px) * 0.92); }
+.seat-cell.left .melds, .seat-cell.right .melds {
+  flex-direction: column; align-items: center; gap: 3px; max-width: none;
+}
+.meld-badge {
+  font-size: 9.5px; color: #fff; background: var(--gold); border-radius: 4px; padding: 1px 5px;
+}
 
 .river { display: flex; flex-wrap: wrap; align-items: flex-end; gap: var(--rgap, 2px); }
 .river-box.r90 > .river, .river-box.r270 > .river, .river-box.r180 > .river { flex-wrap: wrap-reverse; }
@@ -265,17 +275,26 @@ button { font: inherit; color: inherit; }
 }
 .my-melds { display: flex; gap: 10px; flex-wrap: wrap; justify-content: flex-end; }
 .my-melds .tile { --tw: 24px; }
+.my-melds { padding: 4px 6px; }
 .hand-row { display: flex; align-items: flex-end; gap: 3px; flex-wrap: wrap; }
-.hand-row .tile { --tw: 34px; }
-.hand-row .gap { width: 10px; }
-.tile-btn { background: none; border: 0; padding: 0; cursor: default; position: relative; }
+.hand-row .tile { --tw: clamp(19px, 5.2vw, 34px); }
+.hand-row .gap { width: 8px; }
+.tile-btn {
+  background: none; border: 0; padding: 0; cursor: default; position: relative;
+  display: flex; flex-direction: column; align-items: center; gap: 1px;
+}
+.badge-slot {
+  height: 13px; width: 100%; position: relative;   /* バッジで手牌の幅が広がらないようにする */
+}
+.badge-slot .badge {
+  position: absolute; left: 50%; top: 0; transform: translateX(-50%);
+}
 .tile-btn.clickable { cursor: pointer; }
 .tile-btn.clickable:hover .tile, .tile-btn.clickable:focus-visible .tile { transform: translateY(-5px); }
 .tile-btn .tile { transition: transform .12s ease; }
 .tile-btn .badge {
-  position: absolute; top: -5px; left: 50%; transform: translateX(-50%);
-  font-size: 9px; padding: 0 3px; border-radius: 4px; background: var(--accent); color: #fff;
-  white-space: nowrap;
+  font-size: 9.5px; line-height: 13px; padding: 0 4px; border-radius: 4px;
+  background: var(--accent); color: #fff; white-space: nowrap;
 }
 .tile-btn .badge.safe { background: var(--accent); }
 .tile-btn .badge.danger { background: var(--riichi); }
@@ -379,20 +398,16 @@ button { font: inherit; color: inherit; }
 /* ---------- 狭い画面 ---------- */
 @media (min-width: 1000px) {
   .table-grid { --rtw: 26px; gap: 8px 12px; }
-  .meld .tile { --tw: 19px; }
   .seat-head { font-size: 12.5px; }
 }
 @media (max-width: 760px) {
   .table-grid { --rtw: 16px; gap: 4px; }
   .compass { grid-template-columns: repeat(3, minmax(44px, 78px)); padding: 6px 8px; font-size: 11px; }
   .c-round { font-size: 14px; }
-  .meld .tile { --tw: 13px; }
-  .hand-row .tile { --tw: 30px; }
   .seat-head { font-size: 10.5px; gap: 4px; }
 }
 @media (max-width: 430px) {
   .table-grid { --rtw: 14px; }
-  .hand-row .tile { --tw: 26px; }
   .btn { padding: 7px 11px; font-size: 13px; }
   .pscore { font-size: 11px; }
   .pscore .w { font-size: 13px; }
