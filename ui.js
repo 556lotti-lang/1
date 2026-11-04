@@ -67,7 +67,6 @@
   }
 
   // 卓上の1人分（伏せ牌・名前・副露・河）。河は全員同じ向きで上から下へ並べる
-  var ROT = { top: 0, left: 0, right: 0, bottom: 0 };
   function seatCell(v, k, pos) {
     var p = (v.me + k) % 4;
     var pd = v.players[p];
@@ -83,8 +82,11 @@
     var inner = el('div', 'seat-inner');
     inner.appendChild(head);
     if (k !== 0 && pd.melds && pd.melds.length) inner.appendChild(meldsNode(pd.melds));
-    var box = el('div', 'river-box r' + ROT[pos]);
-    box.style.setProperty('--rows', Math.max(3, Math.ceil(pd.discards.length / 6)));
+    // 河は席の向きに合わせた形にする（上下=6枚で折り返して下へ / 左右=6枚で折り返して横へ）
+    var isSide = pos === 'left' || pos === 'right';
+    var box = el('div', 'river-box' + (isSide ? ' side' : ''));
+    if (isSide) box.style.setProperty('--cols', Math.max(2, Math.ceil(pd.discards.length / 6)));
+    else box.style.setProperty('--rows', Math.max(3, Math.ceil(pd.discards.length / 6)));
     box.appendChild(riverNode(pd.discards));
     inner.appendChild(box);
 
