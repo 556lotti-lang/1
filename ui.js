@@ -56,7 +56,14 @@
     return w;
   }
 
-  // 卓上の1人分（名前・副露・河）。河は席の向きに合わせて回転させる
+  // 伏せ牌（他家の手牌）
+  function backsNode(n, vertical) {
+    var w = el('div', 'hand-backs' + (vertical ? ' vert' : ''));
+    for (var i = 0; i < n; i++) w.appendChild(tileNode(null));
+    return w;
+  }
+
+  // 卓上の1人分（伏せ牌・名前・副露・河）。河は席の向きに合わせて回転させる
   var ROT = { top: 180, left: 90, right: 270, bottom: 0 };
   function seatCell(v, k, pos) {
     var p = (v.me + k) % 4;
@@ -69,12 +76,17 @@
     if (pd.riichi) head.appendChild(el('span', 'riichi-badge', 'リーチ'));
     if (pd.melds && pd.melds.length) head.appendChild(el('span', 'meld-badge', '鳴き' + pd.melds.length));
     head.appendChild(el('span', 'seat-score', pd.score.toLocaleString()));
-    cell.appendChild(head);
-    if (k !== 0 && pd.melds && pd.melds.length) cell.appendChild(meldsNode(pd.melds));
+
+    var inner = el('div', 'seat-inner');
+    inner.appendChild(head);
+    if (k !== 0 && pd.melds && pd.melds.length) inner.appendChild(meldsNode(pd.melds));
     var box = el('div', 'river-box r' + ROT[pos]);
     box.style.setProperty('--rows', Math.max(3, Math.ceil(pd.discards.length / 6)));
     box.appendChild(riverNode(pd.discards));
-    cell.appendChild(box);
+    inner.appendChild(box);
+
+    if (k !== 0) cell.appendChild(backsNode(pd.handSize, pos === 'left' || pos === 'right'));
+    cell.appendChild(inner);
     return cell;
   }
   function meldsNode(melds, small) {
@@ -228,35 +240,23 @@
   }
 
 
-  // 卓中央の場況表示
+  // 卓中央の黒板（局・残り牌・本場・供託）
+  var KYOKU_CH = ['一', '二', '三', '四'];
   function compassNode(v) {
     var wrap = el('div', 'felt-center compass-cell');
-    var c = el('div', 'compass');
-    function pcell(k, cls) {
-      var p = (v.me + k) % 4;
-      var pd = v.players[p];
-      var d = el('div', 'pscore ' + cls + (p === v.oya ? ' dealer' : ''));
-      var w = el('span', 'w', WIND_CH[pd.seatWind]);
-      d.appendChild(w);
-      d.appendChild(el('span', 'sc', pd.score.toLocaleString()));
-      d.appendChild(el('div', 'nm', k === 0 ? '自分' : SEAT_LABEL[k]));
-      if (pd.riichi) d.appendChild(el('div', 'stick', ''));
-      return d;
-    }
-    c.appendChild(el('div', 'c-blank'));
-    c.appendChild(pcell(2, 'top'));
-    c.appendChild(el('div', 'c-blank'));
-    c.appendChild(pcell(3, 'left'));
-    var mid = el('div', 'c-center');
-    mid.appendChild(el('div', 'c-round', WIND_CH[v.roundWind] + v.kyoku + '局'));
-    mid.appendChild(el('div', 'c-sub', v.honba + '本場' + (v.kyotaku ? ' / 供託' + v.kyotaku : '')));
-    mid.appendChild(el('div', 'c-sub', '残り ' + v.wallLeft + '枚'));
-    c.appendChild(mid);
-    c.appendChild(pcell(1, 'right'));
-    c.appendChild(el('div', 'c-blank'));
-    c.appendChild(pcell(0, 'bottom'));
-    c.appendChild(el('div', 'c-blank'));
-    wrap.appendChild(c);
+    var b = el('div', 'board');
+    b.appendChild(el('div', 'b-round', WIND_CH[v.roundWind] + KYOKU_CH[v.kyoku - 1] + '局'));
+    b.appendChild(el('div', 'b-wall', '残り' + v.wallLeft + '牌'));
+    var rows = el('div', 'b-rows');
+    var r1 = el('div', 'b-row');
+    r1.appendChild(el('span', 'b-ico honba', ''));
+    r1.appendChild(el('span', null, '× ' + v.honba));
+    var r2 = el('div', 'b-row');
+    r2.appendChild(el('span', 'b-ico stick', ''));
+    r2.appendChild(el('span', null, '× ' + v.kyotaku));
+    rows.appendChild(r1); rows.appendChild(r2);
+    b.appendChild(rows);
+    wrap.appendChild(b);
     return wrap;
   }
 
