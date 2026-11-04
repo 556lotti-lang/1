@@ -1,7 +1,7 @@
 /* エンジン検証テスト:  node tests/engine.test.cjs */
 const fs = require('fs'), path = require('path');
 const dir = path.join(__dirname, '..', 'src');
-for (const f of ['core.js', 'score.js', 'theory.js', 'danger.js', 'ai.js', 'review.js']) new Function(fs.readFileSync(path.join(dir, f), 'utf8'))();
+for (const f of ['core.js', 'score.js', 'theory.js', 'danger.js', 'discard.js', 'ai.js', 'review.js']) new Function(fs.readFileSync(path.join(dir, f), 'utf8'))();
 const C = globalThis.MJCore, S = globalThis.MJScore, Th = globalThis.MJTheory, D = globalThis.MJDanger, R = globalThis.MJReview;
 
 let pass = 0, fail = 0;
@@ -185,7 +185,9 @@ eq('危険度 現物は0%(リーチ者に対して)', D.against(dv, 1, T('4m')).
 eq('危険度 合成は他家のテンパイ推定も含む', dr('4m').rate < 0.03 && dr('4m').rate >= 0, true);
 eq('テンパイ率 リーチは100%', D.tenpaiProb(dv, 1), 1);
 eq('テンパイ率 門前ダマは低く見積もる', D.tenpaiProb(dv, 2) < 0.2, true);
-eq('危険度 表スジ(1萬)', dr('1m').label, '表スジ');
+eq('危険度 スジの1・9', dr('1m').label, 'スジの1・9');
+eq('危険度 スジは数字で安全度が違う(1・9 < 2・8 < 3・7)',
+  D.against(dv, 1, T('1m')).rate < D.against(dv, 1, T('5p')).rate, true);
 eq('危険度 無スジ中張(5萬)が最も危険', dr('5m').rate > dr('1m').rate && dr('5m').rate > dr('5z').rate, true);
 eq('危険度 生牌の字牌は片スジより安全', dr('5z').rate < 0.09, true);
 eq('危険度 片スジ(5筒)', dr('5p').label, '片スジ');
@@ -196,6 +198,79 @@ eq('現物の抽出', D.genbutsuInHand(dv2).map(C.typeToStr).sort(), ['2p', '4m'
 eq('ブロック数 4ブロック', R.blockCount(hand('123m456m78p11s3z'), 0), 4);
 eq('ブロック数 5ブロック', R.blockCount(hand('123m45m78p11s34s9z'), 0), 5);
 eq('ブロック数 鳴き込み', R.blockCount(hand('45m78p11s34s'), 1), 5);
+
+/* ---------- 推奨打牌エンジン（出典2「麻雀の局の進め方と戦術」） ---------- */
+const Dis = globalThis.MJDiscard;
+function mkview(h, turn, opt) {
+  opt = opt || {};
+  const c = hand(h), ids = [];
+  for (let t = 0; t < 34; t++) for (let k = 0; k < c[t]; k++) ids.push(t * 4 + k);
+  const seen = c.slice();
+  const pl = [0, 1, 2, 3].map(i => ({
+    idx: i, discards: [], melds: [], riichi: false, riichiTurn: -1,
+    seatWind: [28, 29, 30, 27][i], score: 25000, handSize: 13
+  }));
+  if (opt.riichi) {
+    pl[1].riichi = true; pl[1].riichiTurn = 0;
+    pl[1].discards = (opt.rd || []).map((t, i) => ({ id: t * 4, turn: i * 4 }));
+    pl[1].discards.forEach(d => seen[C.idToType(d.id)]++);
+  }
+  if (opt.melds1) pl[1].melds = opt.melds1;
+  return {
+    me: 0, hand: ids, melds: [], drawn: ids[ids.length - 1], seen,
+    turnCount: (turn - 1) * 4, wallLeft: 70 - (turn - 1) * 4,
+    seatWind: 28, roundWind: 27, oya: 1, kyoku: 1, honba: 0, kyotaku: 0,
+    scores: [25000, 25000, 25000, 25000], rule: { length: 'tonpuu', kuitan: true },
+    doraInd: [opt.dora != null ? opt.dora : 8], waits: [], riichi: false, players: pl
+  };
+}
+const recTile = (h, turn, opt) => { const r = Dis.recommend(mkview(h, turn, opt), null); return r ? C.typeToStr(r.tile) : null; };
+
+// 孤立牌の切り順: オタ風 → 孤立1・9 → 役牌 → 孤立2・8 → 孤立5 → 孤立4・6 → 孤立3・7
+eq('孤立牌 オタ風を最初に切る', recTile('123m59m1p25p135s9s4z5z', 1), '北');
+eq('孤立牌 2枚切れ字牌は最優先', (() => {
+  const v = mkview('123m59m1p25p135s9s4z5z', 1);
+  v.seen[31] += 2;   // 白が場に2枚見え
+  return C.typeToStr(Dis.recommend(v, null).tile);
+})(), '白');
+eq('孤立牌 1・9は役牌より先', (() => {
+  const v = mkview('123m456m789p345s9m5z', 2);  // 4面子+孤立9萬+孤立白
+  return C.typeToStr(Dis.recommend(v, null).tile);
+})(), '9m');
+eq('孤立牌 役牌はオタ風より後', (() => {
+  const v = mkview('123m456m789p345s5z4z', 2);  // 孤立白 と オタ風北
+  return C.typeToStr(Dis.recommend(v, null).tile);
+})(), '北');
+eq('孤立牌の序列 3・7 > 4・6 > 5 > 2・8 > 1・9', [
+  Dis.isolatedPriority({ seatWind: 28, roundWind: 27, players: [] }, C.emptyCounts(), T('3m')).v,
+  Dis.isolatedPriority({ seatWind: 28, roundWind: 27, players: [] }, C.emptyCounts(), T('4m')).v,
+  Dis.isolatedPriority({ seatWind: 28, roundWind: 27, players: [] }, C.emptyCounts(), T('5m')).v,
+  Dis.isolatedPriority({ seatWind: 28, roundWind: 27, players: [] }, C.emptyCounts(), T('2m')).v,
+  Dis.isolatedPriority({ seatWind: 28, roundWind: 27, players: [] }, C.emptyCounts(), T('1m')).v
+], [6, 5.5, 5, 4, 2]);
+
+// ブロックの強弱
+const bq = (h, t) => Dis.tileRole({ seatWind: 28, roundWind: 27 }, hand(h), T(t)).k;
+eq('ブロック 両面', bq('23m', '2m'), 'ryanmen');
+eq('ブロック 辺張', bq('12m', '1m'), 'penchan');
+eq('ブロック 内嵌張', bq('35m', '3m'), 'kanchanIn');
+eq('ブロック 外嵌張', bq('13m', '1m'), 'kanchanOut');
+eq('ブロック 完成順子', bq('234m', '3m'), 'set');
+
+// 二向聴以下でリーチを受けたらベタオリ(危険度序列)
+const foldRec = Dis.recommend(mkview('1239m258p1259s4z5z6z', 10, { riichi: true, rd: [27, 0, 18, 13] }), null);
+eq('リーチに2向聴以下はベタオリ', foldRec.mode, 'fold');
+eq('ベタオリでは現物を選ぶ', foldRec.rule, '危険度序列');
+
+// 染め手の判定
+const someRec = Dis.recommend(mkview('12356789p99p2m7m5z5z', 4), null);
+eq('染め手は不要スーツから処理', C.suitOf(someRec.tile) !== 1, true);
+eq('染め手の判定', someRec.rule, '染め手の手順');
+
+// フェーズ
+eq('フェーズ 序盤/中盤/終盤', [Th.phaseOf(3).id, Th.phaseOf(9).id, Th.phaseOf(15).id], ['early', 'mid', 'late']);
+eq('副露聴牌率 2副露中盤', Th.furoTenpai(2, 9), 0.55);
+eq('副露聴牌率 3副露終盤', Th.furoTenpai(3, 15), 0.95);
 
 console.log('\n' + pass + ' passed, ' + fail + ' failed');
 process.exit(fail ? 1 : 0);

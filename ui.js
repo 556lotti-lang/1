@@ -183,7 +183,8 @@
   function assistNode(v) {
     var box = el('div', 'assist-box');
     var a = analysisNow(v);
-    box.appendChild(el('div', 'lbl', '手牌情報'));
+    var ph = Th.phaseOf(Math.floor(v.turnCount / 4) + 1);
+    box.appendChild(el('div', 'lbl', '手牌情報 — ' + ph.name + '(' + ph.turns + ')は' + ph.axis + '優先'));
     if (a.type === 14 && a.best) {
       var sh = a.best.shanten;
       var line = el('div');
@@ -192,14 +193,11 @@
       var best = R.recommendFor(v, state.mode === 'turn' ? state.opts : null);
       if (best) {
         var d = el('div');
-        if (best.mode === 'fold') {
-          d.innerHTML = '推奨打: <b>' + tileText(best.tile) + '</b>（ベタオリ・'
-            + (best.danger ? best.danger.label : '') + '）';
-        } else {
-          d.innerHTML = '推奨打: <b>' + tileText(best.tile) + '</b> → 受け入れ <b>' + best.ukeire + '</b>枚'
-            + (best.mode === 'push' ? '（押せる範囲で最大）' : '');
-        }
+        d.innerHTML = '推奨打: <b>' + tileText(best.tile) + '</b>'
+          + (best.mode === 'fold' ? '（ベタオリ）' : ' → 受け入れ <b>' + best.ukeire + '</b>枚')
+          + (best.rule ? ' <span class="rule-tag">' + best.rule + '</span>' : '');
         box.appendChild(d);
+        if (best.reason) box.appendChild(el('div', 'reason', best.reason));
         if (best.mode !== 'fold' && best.tiles) {
           box.appendChild(el('div', null, best.tiles.slice(0, 8).map(function (x) {
             return tileText(x.type) + '×' + x.count;
@@ -416,6 +414,7 @@
       var tag = el('span', 'tag', state.feedback.tag);
       f.appendChild(tag);
       f.appendChild(document.createTextNode(state.feedback.text));
+      if (state.feedback.reason) f.appendChild(el('div', 'reason', state.feedback.reason));
       bar.appendChild(f);
     }
     return bar;
@@ -464,7 +463,10 @@
     else if (r.severity === 'low') { cls = 'mid'; tag = '△ 検討'; }
     else if (r.category === 'near') { cls = 'good'; tag = '○ ほぼ最適'; }
     else if (r.category === 'ok-fold' || r.category === 'ok-push') { cls = 'good'; tag = '○ 判断OK'; }
-    state.feedback = { cls: cls, tag: (isRiichi ? 'リーチ宣言 / ' : '') + tag, text: r.comment };
+    state.feedback = {
+      cls: cls, tag: (isRiichi ? 'リーチ宣言 / ' : '') + tag, text: r.comment,
+      reason: (r.severity && r.recommendReason) ? r.recommendReason : ''
+    };
   }
 
   /* ---------- 人間コントローラ ---------- */
@@ -667,6 +669,12 @@
     if (pri) head.appendChild(el('span', 'pri p' + pri.rank, '第' + pri.rank + '優先 / 影響' + pri.impact));
     box.appendChild(head);
     box.appendChild(el('div', 'cmt', m.comment));
+    if (m.recommendReason) {
+      var rr = el('div', 'reason');
+      if (m.recommendRule) rr.appendChild(el('span', 'rule-tag', m.recommendRule));
+      rr.appendChild(document.createTextNode(' ' + m.recommendReason));
+      box.appendChild(rr);
+    }
     if (m.hand && m.hand.length) {
       var hv = el('div', 'hand-view');
       var ids = m.hand.slice().sort(function (a, b) { return C.idToType(a) - C.idToType(b); });

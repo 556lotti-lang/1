@@ -264,6 +264,14 @@ button { font: inherit; color: inherit; }
   width: 100%; margin-top: 2px;
 }
 .assist-box .lbl:first-child { margin-top: 0; }
+.assist-box .reason {
+  width: 100%; font-size: 11.5px; line-height: 1.55; color: var(--ink-2);
+  border-left: 3px solid var(--accent); padding-left: 7px; margin: 2px 0;
+}
+.rule-tag {
+  font-size: 10px; background: var(--accent-soft); color: var(--accent);
+  border-radius: 4px; padding: 1px 5px; margin-left: 4px; white-space: nowrap;
+}
 
 /* ---------- 卓中央の黒板 ---------- */
 .felt-center { display: flex; align-items: center; justify-content: center; min-width: 0; padding: 2px; }
@@ -352,6 +360,14 @@ button { font: inherit; color: inherit; }
 .feedback.mid { border-color: var(--warn); background: color-mix(in srgb, var(--warn) 16%, var(--surface)); }
 .feedback.bad { border-color: var(--riichi); background: color-mix(in srgb, var(--riichi) 14%, var(--surface)); }
 .feedback .tag { font-weight: 700; margin-right: 4px; }
+.feedback .reason {
+  font-size: 11.5px; line-height: 1.5; color: var(--ink-2); margin-top: 3px;
+  border-left: 3px solid var(--accent); padding-left: 7px;
+}
+.mistake .reason {
+  font-size: 11.5px; line-height: 1.55; color: var(--ink-2); margin-top: 5px;
+  border-left: 3px solid var(--accent); padding-left: 7px;
+}
 
 /* ---------- オーバーレイ ---------- */
 .overlay {

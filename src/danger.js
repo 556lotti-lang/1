@@ -65,7 +65,12 @@
 
     var res;
     if (r >= 4 && r <= 6 && sujiLow && sujiHigh) res = { rate: 0.04, label: '中スジ', rank: 3 };
-    else if ((r <= 3 && sujiHigh) || (r >= 7 && sujiLow)) res = { rate: 0.05, label: '表スジ', rank: 4 };
+    else if ((r <= 3 && sujiHigh) || (r >= 7 && sujiLow)) {
+      // スジでも数字で安全度が大きく違う(出典2)
+      if (r === 1 || r === 9) res = { rate: 0.025, label: 'スジの1・9', rank: 3 };
+      else if (r === 2 || r === 8) res = { rate: 0.05, label: 'スジの2・8', rank: 4 };
+      else res = { rate: 0.07, label: 'スジの3・7', rank: 5 };  // 辺張・嵌張・シャンポン・単騎すべてに当たる
+    }
     else if (r >= 4 && r <= 6 && (sujiLow || sujiHigh)) res = { rate: 0.09, label: '片スジ', rank: 6 };
     else {
       var byRank = [0, 0.07, 0.09, 0.11, 0.13, 0.13, 0.13, 0.11, 0.09, 0.07][r];
@@ -116,8 +121,11 @@
     var pd = view.players[p];
     if (pd.riichi) return 1;
     var go = Math.floor(view.turnCount / 4) + 1;
-    var base = Math.max(0, Math.min(0.62, (go - 4) * 0.045));
     var m = pd.melds.length;
+    var Th = global.MJTheory;
+    // 副露者は「副露数 × 巡目」のマトリクス(出典2)
+    if (m > 0 && Th && Th.furoTenpai) return Th.furoTenpai(m, go);
+    var base = Math.max(0, Math.min(0.62, (go - 4) * 0.045));
     if (m > 0) return Math.min(0.85, base * (1 + 0.35 * m) + 0.05 * m);
     return base * 0.45;   // ダマテン
   }

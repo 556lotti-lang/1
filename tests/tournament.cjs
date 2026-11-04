@@ -2,7 +2,7 @@
    node tests/tournament.cjs [games] [strengthA] [strengthB] */
 const fs = require('fs'), path = require('path');
 const dir = path.join(__dirname, '..', 'src');
-for (const f of ['core', 'score', 'game', 'theory', 'danger', 'ai', 'review'])
+for (const f of ['core', 'score', 'game', 'theory', 'danger', 'discard', 'ai', 'review'])
   new Function(fs.readFileSync(path.join(dir, f + '.js'), 'utf8'))();
 const G = globalThis.MJGame, AI = globalThis.MJAI;
 

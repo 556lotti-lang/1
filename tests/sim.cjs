@@ -1,5 +1,5 @@
 const fs=require('fs');
-for(const f of ['core','score','game','theory','danger','ai','review']) new Function(fs.readFileSync(require('path').join(__dirname,'..','src',f+'.js'),'utf8'))();
+for(const f of ['core','score','game','theory','danger','discard','ai','review']) new Function(fs.readFileSync(require('path').join(__dirname,'..','src',f+'.js'),'utf8'))();
 const C=globalThis.MJCore,G=globalThis.MJGame,AI=globalThis.MJAI;
 (async()=>{
   let stats={agari:0,tsumo:0,ron:0,ryuukyoku:0,riichi:0,call:0,kan:0,hands:0,games:0,err:0,yakuman:0,maxPts:0,scoreSumBad:0};

@@ -171,6 +171,33 @@
   /* ---------- 打牌選択 ---------- */
   function chooseDiscard(view, opts, strength, tune) {
     tune = tune || TUNE_DEFAULT;
+    // 打牌の基本方針は推奨エンジン(出典2準拠)に合わせる
+    var Dis = global.MJDiscard;
+    if (Dis && strength !== 'easy') {
+      var plan = Dis.recommend(view, opts);
+      if (plan) {
+        var pickType = plan.tile;
+        // 「強い」は良形テンパイへの向かいやすさで上位候補を比べ直す
+        if (strength === 'strong' && tune.deep && plan.shanten === 1 && plan.mode !== 'fold' && plan.ranked) {
+          var cc0 = C.countsFromIds(view.hand), mm0 = view.melds.length;
+          var best = null;
+          for (var ri = 0; ri < Math.min(4, plan.ranked.length); ri++) {
+            var cand = plan.ranked[ri];
+            var cc = cc0.slice(); cc[cand.tile]--;
+            if (C.shanten(cc, mm0) !== plan.shanten) continue;
+            var tq = tenpaiQuality(cc, mm0, view.seen, 8);
+            var sc = cand.score + (tq == null ? 0 : (tq - 5) * tune.deep);
+            if (!best || sc > best.sc) best = { sc: sc, tile: cand.tile };
+          }
+          if (best) pickType = best.tile;
+        }
+        var ids0 = opts.discardable.filter(function (id) { return C.idToType(id) === pickType; });
+        if (ids0.length) {
+          ids0.sort(function (x, y) { return (C.isRedId(x) ? 1 : 0) - (C.isRedId(y) ? 1 : 0); });
+          return ids0[0];
+        }
+      }
+    }
     var counts = C.countsFromIds(view.hand);
     var melds = view.melds.length;
     var dora = doraSet(view);

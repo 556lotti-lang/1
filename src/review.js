@@ -62,7 +62,7 @@
 
 
   /* 現局面の押し引き状況と推奨打（検討・アシスト・バッジで共通して使う） */
-  function buildContext(view, cands, pool, bestSh, counts, melds, dora) {
+  function buildContext(view, cands, pool, bestSh, counts, melds, dora, opts) {
     var ths = D.threats(view);
     var foldThs = D.foldThreats(view, ths);
     var go = Math.floor(view.turnCount / 4) + 1;
@@ -70,32 +70,18 @@
     var good = AI.isGoodShape(cands, bestSh);
     var risk = foldThs.length ? Th.allowedRisk(bestSh, good, value >= 4, go, view.wallLeft) : 1;
     var genbutsu = D.genbutsuInHand(view, ths);
-    var recommend, mode;
-    if (foldThs.length && risk <= 0.015) {
-      mode = 'fold';
-      recommend = cands.slice().sort(function (a, b) {
-        var da = D.estimate(view, a.tile, foldThs).rate, db = D.estimate(view, b.tile, foldThs).rate;
-        if (da !== db) return da - db;
-        return b.ukeire - a.ukeire;
-      })[0];
-    } else if (foldThs.length) {
-      mode = 'push';
-      var okRisk = pool.filter(function (c) { return D.estimate(view, c.tile, foldThs).rate <= risk; });
-      recommend = (okRisk.length ? okRisk : pool).slice()
-        .sort(function (a, b) { return b.ukeire - a.ukeire; })[0];
-    } else {
-      mode = 'efficiency';
-      recommend = pool.map(function (c) {
-        return {
-          c: c, s: c.ukeire - (dora[c.tile] ? 4 : 0)
-            - (AI.isYakuhaiType(view, c.tile) && counts[c.tile] >= 2 ? 4 : 0)
-            + Th.isolatedValue(c.tile, view) * 0.01
-        };
-      }).sort(function (a, b) { return b.s - a.s; })[0].c;
+    // 推奨打牌は出典2準拠のエンジン(src/discard.js)で決める
+    var plan = global.MJDiscard ? global.MJDiscard.recommend(view, opts) : null;
+    var recommend = null, mode = foldThs.length ? (risk <= 0.015 ? 'fold' : 'push') : 'efficiency';
+    if (plan) {
+      for (var ri = 0; ri < cands.length; ri++) if (cands[ri].tile === plan.tile) recommend = cands[ri];
+      mode = plan.mode;
     }
+    if (!recommend) recommend = pool[0];
     return {
       ths: ths, foldThs: foldThs, go: go, value: value, good: good, risk: risk,
-      genbutsu: genbutsu, recommend: recommend, mode: mode, bestShanten: bestSh
+      genbutsu: genbutsu, recommend: recommend, mode: mode, bestShanten: bestSh,
+      plan: plan
     };
   }
 
@@ -114,10 +100,12 @@
     if (!cands.length) return null;
     var bestSh = cands[0].shanten;
     var pool = cands.filter(function (c) { return c.shanten === bestSh; });
-    var ctx = buildContext(view, cands, pool, bestSh, counts, melds, AI.doraSet(view));
+    var ctx = buildContext(view, cands, pool, bestSh, counts, melds, AI.doraSet(view), opts);
     return {
       tile: ctx.recommend.tile, ukeire: ctx.recommend.ukeire, tiles: ctx.recommend.tiles,
       shanten: ctx.recommend.shanten, mode: ctx.mode, risk: ctx.risk,
+      reason: ctx.plan ? ctx.plan.reason : '', rule: ctx.plan ? ctx.plan.rule : '',
+      phase: ctx.plan ? ctx.plan.phase : null, blocks: ctx.plan ? ctx.plan.blocks : null,
       danger: ctx.foldThs.length ? D.estimate(view, ctx.recommend.tile, ctx.foldThs)
         : (ctx.ths.length ? D.estimate(view, ctx.recommend.tile, ctx.ths) : null),
       genbutsu: ctx.genbutsu, bestShanten: bestSh,
@@ -141,7 +129,7 @@
     var maxUk = 0;
     for (i = 0; i < pool.length; i++) maxUk = Math.max(maxUk, pool[i].ukeire);
 
-    var ctx = buildContext(view, cands, pool, bestSh, counts, melds, dora);
+    var ctx = buildContext(view, cands, pool, bestSh, counts, melds, dora, opts);
     var ths = ctx.ths, foldThs = ctx.foldThs, go = ctx.go, value = ctx.value,
       good = ctx.good, risk = ctx.risk, recommend = ctx.recommend, genbutsu = ctx.genbutsu;
     var dg = foldThs.length ? D.estimate(view, chosen, foldThs)
@@ -161,6 +149,8 @@
       chosenShanten: mine.shanten, chosenUkeire: mine.ukeire, chosenTiles: mine.tiles,
       bestShanten: bestSh, bestUkeire: maxUk,
       recommend: recommend.tile, recommendUkeire: recommend.ukeire, recommendTiles: recommend.tiles,
+      recommendReason: ctx.plan ? ctx.plan.reason : '', recommendRule: ctx.plan ? ctx.plan.rule : '',
+      phase: ctx.plan ? ctx.plan.phase : null, blocks: ctx.plan ? ctx.plan.blocks : null,
       danger: dg.rate, dangerLabel: dg.label, allowedRisk: risk,
       handValue: value, goodShape: good, safeOptions: genbutsu,
       threats: ths.map(function (t) { return { p: t.p, riichi: t.riichi, melds: t.melds }; }),
@@ -180,6 +170,14 @@
        それ以外の軽い仕掛けには過度に警戒せず、手牌進行を優先して評価する。 */
     if (foldThs.length) {
       if (bestSh >= 2) {
+        // すでに最も安全な牌を選んでいるならミスではない
+        if (chosen === recommend.tile) {
+          rec.category = 'ok-fold';
+          rec.comment = genbutsu.length
+            ? tl(chosen) + 'は現物。2向聴以下でのベタオリは正着です。'
+            : '現物はありませんが、' + tl(chosen) + '（' + dg.label + '・' + pct(dg.rate) + '）がこの手牌で最も安全な牌です。正しい選択。';
+          return rec;
+        }
         if (dg.rate > 0.015) {
           rec.severity = dg.rate >= 0.08 ? 'high' : 'mid';
           rec.category = 'push';
