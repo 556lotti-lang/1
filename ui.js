@@ -8,12 +8,15 @@
   var HONOR = ['東', '南', '西', '北', '白', '發', '中'];
 
   var cfg = {
-    length: 'tonpuu', strength: 'normal', aka: true,
+    v: 2, length: 'tonpuu', strength: 'strong', aka: true,
     assist: true, instant: true, speed: 520
   };
   try {
     var saved = JSON.parse(localStorage.getItem('mj-cfg') || 'null');
-    if (saved) Object.assign(cfg, saved);
+    if (saved) {
+      Object.assign(cfg, saved);
+      if (!saved.v) { cfg.strength = 'strong'; cfg.v = 2; }   // 強いAIを既定に
+    }
   } catch (e) { }
   function saveCfg() { try { localStorage.setItem('mj-cfg', JSON.stringify(cfg)); } catch (e) { } }
 
@@ -63,8 +66,8 @@
     return w;
   }
 
-  // 卓上の1人分（伏せ牌・名前・副露・河）。河は席の向きに合わせて回転させる
-  var ROT = { top: 180, left: 90, right: 270, bottom: 0 };
+  // 卓上の1人分（伏せ牌・名前・副露・河）。河は全員同じ向きで上から下へ並べる
+  var ROT = { top: 0, left: 0, right: 0, bottom: 0 };
   function seatCell(v, k, pos) {
     var p = (v.me + k) % 4;
     var pd = v.players[p];
@@ -1004,7 +1007,7 @@
         { label: '東風戦', v: 'tonpuu' }, { label: '半荘', v: 'hanchan' }, { label: '1局のみ', v: 'one' }
       ]);
       seg('AIの強さ', 'strength', [
-        { label: 'やさしい', v: 'easy' }, { label: 'ふつう', v: 'normal' }
+        { label: 'やさしい', v: 'easy' }, { label: 'ふつう', v: 'normal' }, { label: '強い', v: 'strong' }
       ]);
       seg('進行速度', 'speed', [
         { label: 'ゆっくり', v: 900 }, { label: 'ふつう', v: 520 }, { label: '速い', v: 220 }
@@ -1032,7 +1035,9 @@
       wrap.appendChild(bt);
       panel.appendChild(wrap);
       panel.appendChild(el('p', 'hint',
-        '赤ドラあり / 喰いタンあり / 後付けあり。符・役・裏ドラまで計算します。'));
+        '赤ドラあり / 喰いタンあり / 後付けあり。符・役・裏ドラまで計算します。'
+        + '「強い」のAIは、良形テンパイへの向かいやすさ・役と打点の見込み・統計的な押し引き基準・'
+        + 'オーラスの着順意識まで見て打ちます。'));
     });
   }
 

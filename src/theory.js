@@ -75,7 +75,10 @@
      1向聴は基本1枚押しまで（高打点かつ好形なら巡目に応じて押せる）。
      2向聴以下は即ベタオリ。終盤は許容放銃率が下がり、最終盤は形式聴牌のため再び押し有利（U字）。 */
   function allowedRisk(shanten, goodShape, bigValue, go, wallLeft) {
-    if (shanten >= 2) return 0.01;           // 現物のみ
+    if (shanten >= 2) {
+      // 終盤に2向聴以下なら和了は望めないので撤退(形式聴牌も間に合わない)
+      return 0.01;
+    }
     if (shanten === 0) return 1;             // 聴牌は押し
     // 1向聴
     var base;

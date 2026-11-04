@@ -105,8 +105,72 @@
     return n;
   }
 
+
+  /* 手牌に残る形の質。両面が多いほど良形になりやすい */
+  function blockQuality(counts) {
+    var ryanmen = 0, kanchan = 0, penchan = 0, pairs = 0;
+    for (var s = 0; s < 3; s++) {
+      for (var r = 1; r <= 9; r++) {
+        var a = s * 9 + r - 1;
+        if (!counts[a]) continue;
+        if (r <= 8 && counts[a + 1]) { if (r >= 2 && r <= 7) ryanmen++; else penchan++; }
+        if (r <= 7 && counts[a + 2]) kanchan++;
+      }
+    }
+    for (var i = 0; i < 34; i++) if (counts[i] >= 2) pairs++;
+    return { ryanmen: ryanmen, kanchan: kanchan, penchan: penchan, pairs: pairs };
+  }
+
+
+
+  /* 1向聴の手牌について「受け入れた後にどれくらい広い待ちのテンパイになるか」の期待値。
+     受け入れ枚数が同じでも、良形テンパイに向かう選択を選べるようにする。 */
+  function tenpaiQuality(counts, melds, seen, maxTiles) {
+    var u = C.ukeire(counts, melds, seen);
+    if (u.shanten !== 1 || !u.tiles.length) return null;
+    var list = u.tiles.slice().sort(function (x, y) { return y.count - x.count; });
+    if (maxTiles) list = list.slice(0, maxTiles);
+    var sum = 0, acc = 0;
+    for (var k = 0; k < list.length; k++) {
+      var t = list[k].type, cnt = list[k].count;
+      counts[t]++;
+      var best = 0;
+      for (var d = 0; d < 34; d++) {
+        if (!counts[d]) continue;
+        counts[d]--;
+        if (C.shanten(counts, melds) === 0) {
+          var w = C.waitsOf(counts, melds), tot = 0;
+          for (var q = 0; q < w.length; q++) tot += Math.max(0, 4 - (seen ? seen[w[q]] : 0));
+          if (tot > best) best = tot;
+        }
+        counts[d]++;
+      }
+      counts[t]--;
+      sum += cnt * best; acc += cnt;
+    }
+    return acc ? sum / acc : 0;
+  }
+
+  /* 点数状況。オーラスは着順意識で押し引きを変える */
+  function rankContext(view) {
+    var scores = view.scores, me = view.me, my = scores[me];
+    var rank = 1, top = -Infinity, lead = Infinity;
+    for (var i = 0; i < 4; i++) {
+      if (i === me) continue;
+      if (scores[i] > my) rank++;
+      if (scores[i] > top) top = scores[i];
+      lead = Math.min(lead, my - scores[i]);
+    }
+    var len = view.rule.length;
+    var isLast = len === 'one'
+      || (len === 'tonpuu' && view.roundWind === 27 && view.kyoku === 4)
+      || (len === 'hanchan' && view.roundWind === 28 && view.kyoku === 4);
+    return { rank: rank, isLast: isLast, lead: my - top, my: my, top: top };
+  }
+
   /* ---------- 打牌選択 ---------- */
-  function chooseDiscard(view, opts, strength) {
+  function chooseDiscard(view, opts, strength, tune) {
+    tune = tune || TUNE_DEFAULT;
     var counts = C.countsFromIds(view.hand);
     var melds = view.melds.length;
     var dora = doraSet(view);
@@ -126,21 +190,49 @@
     var value = handValue(view, counts, melds);
     var good = isGoodShape(cands, bestSh);
     var risk = foldThs.length ? Th.allowedRisk(bestSh, good, value >= 4, go, view.wallLeft) : 1;
+    // 着順意識: オーラスのトップ目は押さない / ラス目は押す
+    var rc = (strength === 'strong' && tune.rank) ? rankContext(view) : null;
+    if (rc && rc.isLast && foldThs.length) {
+      if (rc.rank === 1 && rc.lead >= 4000) risk = Math.min(risk, bestSh === 0 ? 0.05 : 0.012);
+      else if (rc.rank === 4 && bestSh <= 1) risk = Math.max(risk, 0.14);
+    }
     var fold = foldThs.length > 0 && risk <= 0.015;
     if (strength === 'easy' && fold && Math.random() < 0.3) fold = false;
 
+    var strong = strength === 'strong';
+    var deepBudget = 5;   // 計算量の上限
+    cands.sort(function (x, y) {
+      if (x.shanten !== y.shanten) return x.shanten - y.shanten;
+      return y.ukeire - x.ukeire;
+    });
     var scored = cands.map(function (c) {
       var dg = ths.length ? D.estimate(view, c.tile, ths) : { rate: 0 };
+      var dgFold = foldThs.length ? D.estimate(view, c.tile, foldThs) : { rate: 0 };
       var score;
       if (fold) {
-        score = -dg.rate * 1000 + c.ukeire * 0.03;
+        score = -dgFold.rate * 1000 - dg.rate * 120 + c.ukeire * 0.03;
         if (C.isHonor(c.tile)) score += 0.3;
       } else {
         score = -(c.shanten - bestSh) * 60;
         score += c.ukeire * 1.0 + c.tiles.length * 0.4;
         score -= keepValue(view, counts, c.tile, dora) * 2.0;
         score -= dg.rate * 30;
-        score -= Math.max(0, dg.rate - risk) * 600; // 許容放銃率を超える押しは強く抑制
+        score -= Math.max(0, dgFold.rate - risk) * 600; // 許容放銃率を超える押しは強く抑制
+        if (strong) {
+          var cc = counts.slice(); cc[c.tile]--;
+          if (tune.shape || tune.pair || tune.penchan) {
+            var q = blockQuality(cc);
+            score += q.ryanmen * tune.shape + Math.min(q.pairs, 2) * tune.pair - q.penchan * tune.penchan;
+          }
+          if (tune.value) score += handValue(view, cc, melds) * tune.value;
+          if (tune.keepSafe && foldThs.length && dgFold.rate === 0 && c.ukeire >= maxUk - 2) score -= tune.keepSafe;
+          // 良形テンパイへの向かいやすさ(1向聴のときだけ、上位候補に限って計算)
+          if (tune.deep && c.shanten === 1 && c.shanten === bestSh && deepBudget > 0) {
+            deepBudget--;
+            var tq = tenpaiQuality(cc, melds, view.seen, 8);
+            if (tq != null) score += (tq - 5) * tune.deep;
+          }
+        }
         if (strength === 'easy') score += (Math.random() - 0.5) * 8;
       }
       return { c: c, score: score };
@@ -153,9 +245,16 @@
   }
 
   /* ---------- controller ---------- */
+  /* 「強い」AIの調整値。tests/tournament.cjs で実測して決めたもの
+     deep   : 良形テンパイへの向かいやすさを見る強さ(効果あり)
+     call   : 鳴きの積極度(2=速度重視)
+     rank   : オーラスの着順意識
+     damaten: ダマテン判断(実測で逆効果だったため既定は0) */
+  var TUNE_DEFAULT = { shape: 0, pair: 0, penchan: 0, value: 0, keepSafe: 0, call: 2, deep: 1.1, damaten: 0, rank: 1 };
   function create(opt) {
     opt = opt || {};
     var strength = opt.strength || 'normal';
+    var tune = Object.assign({}, TUNE_DEFAULT, opt.tune || {});
 
     function turnAction(view, opts) {
       if (opts.canTsumo) return { type: 'tsumo' };
@@ -193,14 +292,25 @@
         var ok = true;
         // 追いかけで待ちが極端に細い場合のみ見送り
         if (ths.length && best.total <= 2) ok = false;
+        if (strength === 'strong') {
+          var rc2 = rankContext(view);
+          // オーラスの大きなトップ目は、安い手でリーチして放銃リスクを上げない
+          if (tune.rank && rc2.isLast && rc2.rank === 1 && rc2.lead >= 8000 && ths.length) ok = false;
+          // ダマでも満貫以上かつ待ちが細いときは手変わりを待つ
+          if (tune.damaten) {
+            var ccR = counts.slice(); ccR[C.idToType(best.id)]--;
+            if (handValue(view, ccR, melds) >= 6 && best.total <= 3) ok = false;
+          }
+        }
         if (strength === 'easy' && Math.random() < 0.15) ok = false;
         if (ok) return { type: 'riichi', tile: best.id };
       }
 
-      return { type: 'discard', tile: chooseDiscard(view, opts, strength) };
+      return { type: 'discard', tile: chooseDiscard(view, opts, strength, tune) };
     }
 
     function callAction(view, o) {
+      var aggressive = (strength === 'strong') && tune.call > 1;
       if (o.canRon) return { type: 'ron' };
       var counts = C.countsFromIds(view.hand);
       var melds = view.melds.length;
@@ -245,6 +355,9 @@
           if (pot.ok && ap.shanten < curSh && (val >= 2 || keishiki) && (!menzen || ap.shanten <= 1)) {
             return { type: 'pon', tiles: o.ponTiles };
           }
+          if (aggressive && pot.ok && ap.shanten < curSh && val >= 2 && ap.shanten <= 2) {
+            return { type: 'pon', tiles: o.ponTiles };
+          }
         }
       }
       // 大明槓は役牌のみ
@@ -264,7 +377,7 @@
           if (!pot3.ok) continue;                       // 役が見えないチーはしない
           var v3 = openValue(ac.counts, false);
           if (v3 < 2 && !keishiki && ac.shanten > 0) continue;  // 打点の下限
-          if (menzen && curSh <= 1 && ac.shanten > 0) continue; // 門前の良い手は崩さない
+          if (menzen && curSh <= 1 && ac.shanten > 0 && !(aggressive && v3 >= 3)) continue; // 門前の良い手は崩さない
           if (ac.shanten >= curSh) continue;
           var ryAfter = ryanmenCount(ac.counts);
           if (ryBefore > 0 && ryAfter === 0 && ac.shanten > 0) continue; // 唯一の両面を消す鳴きはスルー
@@ -281,6 +394,9 @@
   global.MJAI = {
     create: create,
     chooseDiscard: chooseDiscard,
+    rankContext: rankContext,
+    blockQuality: blockQuality,
+    tenpaiQuality: tenpaiQuality,
     handValue: handValue,
     isGoodShape: isGoodShape,
     keepValue: keepValue,
