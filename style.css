@@ -308,9 +308,14 @@ button { font: inherit; color: inherit; }
 .my-melds { display: flex; gap: 10px; flex-wrap: wrap; justify-content: flex-end; }
 .my-melds .tile { --tw: 24px; }
 .my-melds { padding: 4px 6px; }
-.hand-row { display: flex; align-items: flex-end; gap: 2px; flex-wrap: wrap; justify-content: center; }
+.hand-row { display: flex; align-items: flex-end; gap: 2px 10px; flex-wrap: wrap; justify-content: center; }
+.hand-main { display: flex; align-items: flex-end; gap: 2px; flex-wrap: nowrap; }
+.hand-drawn { display: flex; align-items: flex-end; gap: 4px; }
+.drawn-label {
+  font-size: 10px; color: var(--ink-3); letter-spacing: .08em; padding-bottom: 4px;
+}
 .hand-row .tile { --tw: min(var(--hand-cap, 46px), calc((min(100vw, 1040px) - var(--hand-overhead, 72px)) / 14)); }
-.hand-row .gap { width: 8px; }
+.hand-drawn .tile { --tw: min(calc(var(--hand-cap, 46px) * 1.12), calc((min(100vw, 1040px) - var(--hand-overhead, 72px)) / 12.5)); }
 .hand-row .tile-btn.clickable:hover .tile { transform: translateY(-7px); }
 .tile-btn {
   background: none; border: 0; padding: 0; cursor: default; position: relative;
@@ -330,6 +335,7 @@ button { font: inherit; color: inherit; }
   background: var(--accent); color: #fff; white-space: nowrap;
 }
 .tile-btn .badge.safe { background: var(--accent); }
+.tile-btn .badge.warn { background: var(--warn); color: #231a06; }
 .tile-btn .badge.danger { background: var(--riichi); }
 .tile-btn .badge.rec { background: var(--gold); }
 
@@ -435,9 +441,14 @@ button { font: inherit; color: inherit; }
 }
 @media (max-width: 760px) {
   #app { padding-left: max(5px, env(safe-area-inset-left, 0px)); padding-right: max(5px, env(safe-area-inset-right, 0px)); gap: 4px; }
+  .hand-row { flex-direction: column; align-items: stretch; gap: 3px; }
+  .hand-main { justify-content: center; gap: 1px; }
+  .hand-drawn { justify-content: flex-end; padding-right: 2px; }
+  .hand-row .tile { --tw: min(var(--hand-cap, 46px), calc((100vw - var(--hand-overhead, 44px)) / 13)); }
+  .hand-drawn .tile { --tw: min(calc(var(--hand-cap, 46px) * 1.15), calc((100vw - var(--hand-overhead, 44px)) / 11)); }
   .handzone { padding: 4px; }
   .hand-row { gap: 1px; }
-  #app { --hand-overhead: 44px; }
+  #app { --hand-overhead: 30px; }
   .table { padding: 5px; }
   .table-grid { --rtw: 17px; gap: 3px; }
   .board { padding: 6px 10px; }

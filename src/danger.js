@@ -109,17 +109,19 @@
     return res;
   }
 
-  // 脅威度(その家がテンパイしている確からしさ × 打点の重み)
-  function threatWeight(view, p) {
+  /* その家がテンパイしている確率の推定
+     リーチ=100%。副露手は巡目と副露数から、門前は「ダマテンの割合」として低めに見積もる。
+     (リーチ可能なら普通はリーチするため、門前non-riichiのテンパイ率は低い) */
+  function tenpaiProb(view, p) {
     var pd = view.players[p];
-    var go = Math.floor(view.turnCount / 4) + 1;
     if (pd.riichi) return 1;
+    var go = Math.floor(view.turnCount / 4) + 1;
+    var base = Math.max(0, Math.min(0.62, (go - 4) * 0.045));
     var m = pd.melds.length;
-    if (m >= 3) return go >= 6 ? 0.75 : 0.5;
-    if (m === 2) return go >= 7 ? 0.5 : 0.3;
-    if (m === 1) return go >= 10 ? 0.3 : 0.15;
-    return 0;
+    if (m > 0) return Math.min(0.85, base * (1 + 0.35 * m) + 0.05 * m);
+    return base * 0.45;   // ダマテン
   }
+  function threatWeight(view, p) { return tenpaiProb(view, p); }
 
   function threats(view) {
     var out = [];
@@ -127,14 +129,14 @@
     var Th = global.MJTheory;
     for (var p = 0; p < 4; p++) {
       if (p === view.me) continue;
-      var w = threatWeight(view, p);
-      if (w <= 0) continue;
+      var w = tenpaiProb(view, p);
+      if (w < 0.10) continue;   // 可能性が低すぎる相手は数えない
       var riichi = view.players[p].riichi;
       var nm = view.players[p].melds.length;
       // foldWorthy: ベタオリを検討すべき相手か
       // リーチは常に対象。副露手は「3フーロで即 / 2フーロは7巡目以降 / 1フーロは10巡目以降」(資料の守備モデル)
       var foldWorthy = riichi || (Th ? Th.foldLineVsMelds(nm, go) : nm >= 2);
-      out.push({ p: p, weight: w, riichi: riichi, melds: nm, foldWorthy: foldWorthy });
+      out.push({ p: p, weight: w, tenpai: w, riichi: riichi, melds: nm, foldWorthy: foldWorthy });
     }
     return out;
   }
@@ -142,24 +144,34 @@
     return (ths || threats(view)).filter(function (t) { return t.foldWorthy; });
   }
 
-  // 全脅威に対する推定放銃率(最大)
+  /* この牌を切ったときに誰かに当たる確率
+     各家について「テンパイ確率 × その家に対する放銃率」を求め、全員ぶんを合成する */
   function estimate(view, type, ths) {
     ths = ths || threats(view);
-    var best = { rate: 0, label: '安全', rank: 1, from: null };
+    var survive = 1, top = { rate: 0, label: '安全', rank: 1, from: null };
+    var per = [];
     for (var i = 0; i < ths.length; i++) {
       var t = ths[i];
       var r = against(view, t.p, type);
       var eff = r.rate * t.weight;
-      if (eff > best.rate) best = { rate: eff, label: r.label, rank: r.rank, from: t.p, raw: r.rate };
+      survive *= (1 - eff);
+      per.push({ p: t.p, rate: eff, label: r.label, rank: r.rank, tenpai: t.weight });
+      if (eff > top.rate) top = { rate: eff, label: r.label, rank: r.rank, from: t.p, raw: r.rate };
     }
-    if (!ths.length) best.label = '脅威なし';
-    else if (best.rate === 0) best.label = '現物';
-    return best;
+    var total = 1 - survive;
+    var res = {
+      rate: total, label: top.label, rank: top.rank, from: top.from, raw: top.raw, per: per
+    };
+    if (!ths.length) res.label = '脅威なし';
+    else if (total === 0) res.label = '現物';
+    return res;
   }
 
-  // 手牌の中の安全牌(現物)一覧
+  // 手牌の中の安全牌(現物)一覧。警戒対象(リーチ・重い副露)に対して通っている牌
   function genbutsuInHand(view, ths) {
     ths = ths || threats(view);
+    var fold = ths.filter(function (t) { return t.foldWorthy; });
+    if (fold.length) ths = fold;
     if (!ths.length) return [];
     var out = [], seenT = {};
     for (var i = 0; i < view.hand.length; i++) {
@@ -177,6 +189,7 @@
 
   global.MJDanger = {
     estimate: estimate,
+    tenpaiProb: tenpaiProb,
     foldThreats: foldThreats,
     against: against,
     threats: threats,

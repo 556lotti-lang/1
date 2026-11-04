@@ -181,7 +181,10 @@ function dangerView(discards, myHand) {
 }
 const dv = dangerView([T('4m'), T('2p')], [T('1m'), T('5m'), T('7m'), T('1p'), T('5p'), T('1z'), T('5z')]);
 const dr = t => D.estimate(dv, T(t));
-eq('危険度 現物は0%', dr('4m').rate, 0);
+eq('危険度 現物は0%(リーチ者に対して)', D.against(dv, 1, T('4m')).rate, 0);
+eq('危険度 合成は他家のテンパイ推定も含む', dr('4m').rate < 0.03 && dr('4m').rate >= 0, true);
+eq('テンパイ率 リーチは100%', D.tenpaiProb(dv, 1), 1);
+eq('テンパイ率 門前ダマは低く見積もる', D.tenpaiProb(dv, 2) < 0.2, true);
 eq('危険度 表スジ(1萬)', dr('1m').label, '表スジ');
 eq('危険度 無スジ中張(5萬)が最も危険', dr('5m').rate > dr('1m').rate && dr('5m').rate > dr('5z').rate, true);
 eq('危険度 生牌の字牌は片スジより安全', dr('5z').rate < 0.09, true);

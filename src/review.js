@@ -74,13 +74,13 @@
     if (foldThs.length && risk <= 0.015) {
       mode = 'fold';
       recommend = cands.slice().sort(function (a, b) {
-        var da = D.estimate(view, a.tile, ths).rate, db = D.estimate(view, b.tile, ths).rate;
+        var da = D.estimate(view, a.tile, foldThs).rate, db = D.estimate(view, b.tile, foldThs).rate;
         if (da !== db) return da - db;
         return b.ukeire - a.ukeire;
       })[0];
     } else if (foldThs.length) {
       mode = 'push';
-      var okRisk = pool.filter(function (c) { return D.estimate(view, c.tile, ths).rate <= risk; });
+      var okRisk = pool.filter(function (c) { return D.estimate(view, c.tile, foldThs).rate <= risk; });
       recommend = (okRisk.length ? okRisk : pool).slice()
         .sort(function (a, b) { return b.ukeire - a.ukeire; })[0];
     } else {
@@ -118,7 +118,8 @@
     return {
       tile: ctx.recommend.tile, ukeire: ctx.recommend.ukeire, tiles: ctx.recommend.tiles,
       shanten: ctx.recommend.shanten, mode: ctx.mode, risk: ctx.risk,
-      danger: ctx.ths.length ? D.estimate(view, ctx.recommend.tile, ctx.ths) : null,
+      danger: ctx.foldThs.length ? D.estimate(view, ctx.recommend.tile, ctx.foldThs)
+        : (ctx.ths.length ? D.estimate(view, ctx.recommend.tile, ctx.ths) : null),
       genbutsu: ctx.genbutsu, bestShanten: bestSh,
       maxUkeire: pool.reduce(function (m, c) { return Math.max(m, c.ukeire); }, 0)
     };
@@ -143,7 +144,8 @@
     var ctx = buildContext(view, cands, pool, bestSh, counts, melds, dora);
     var ths = ctx.ths, foldThs = ctx.foldThs, go = ctx.go, value = ctx.value,
       good = ctx.good, risk = ctx.risk, recommend = ctx.recommend, genbutsu = ctx.genbutsu;
-    var dg = ths.length ? D.estimate(view, chosen, ths) : { rate: 0, label: '-' };
+    var dg = foldThs.length ? D.estimate(view, chosen, foldThs)
+      : (ths.length ? D.estimate(view, chosen, ths) : { rate: 0, label: '-' });
 
     var mine = null;
     for (i = 0; i < cands.length; i++) if (cands[i].tile === chosen) mine = cands[i];
@@ -184,7 +186,7 @@
           rec.comment = who + 'に対し、' + bestSh + '向聴から' + tl(chosen) + '（' + dg.label + '・推定放銃率'
             + pct(dg.rate) + '）を切っています。2向聴以下は即ベタオリが統計的セオリーです。'
             + (genbutsu.length ? safeStr + '。' : '現物はないので、この中では ' + tl(recommend.tile)
-              + '（' + D.estimate(view, recommend.tile, ths).label + '・' + pct(D.estimate(view, recommend.tile, ths).rate) + '）が最も安全です。');
+              + '（' + D.estimate(view, recommend.tile, foldThs).label + '・' + pct(D.estimate(view, recommend.tile, foldThs).rate) + '）が最も安全です。');
           return rec;
         }
         rec.category = 'ok-fold';
@@ -202,12 +204,12 @@
           return rec;
         }
         var saferEqual = pool.filter(function (c) {
-          return c.ukeire >= mine.ukeire && D.estimate(view, c.tile, ths).rate < dg.rate - 0.03;
+          return c.ukeire >= mine.ukeire && D.estimate(view, c.tile, foldThs).rate < dg.rate - 0.03;
         });
         if (saferEqual.length) {
           rec.severity = 'low'; rec.category = 'push';
           rec.comment = '押す判断は妥当です。ただし同じ受け入れで ' + tl(saferEqual[0].tile)
-            + '（' + D.estimate(view, saferEqual[0].tile, ths).label + '）の方が安全でした。';
+            + '（' + D.estimate(view, saferEqual[0].tile, foldThs).label + '）の方が安全でした。';
           return rec;
         }
         rec.category = 'ok-push';

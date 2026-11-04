@@ -231,6 +231,15 @@
       var gen = D.genbutsuInHand(v, ths);
       box.appendChild(el('div', null, gen.length ? '現物: ' + gen.map(tileText).join('・') : '現物なし'));
     }
+    var allTh = D.threats(v).filter(function (t) { return t.tenpai >= 0.15; });
+    if (allTh.length) {
+      box.appendChild(el('div', 'lbl', '他家のテンパイ推定'));
+      box.appendChild(el('div', null, allTh.map(function (t) {
+        return SEAT_LABEL[(t.p - v.me + 4) % 4] + ' '
+          + (t.riichi ? 'リーチ' : (t.melds ? t.melds + 'フーロ' : '門前'))
+          + ' ' + Math.round(t.tenpai * 100) + '%';
+      }).join(' / ') + '（手牌の数字は切ったときの放銃率）'));
+    }
     var oc = orasuInfo(v);
     if (oc) {
       box.appendChild(el('div', 'lbl', 'オーラス条件'));
@@ -290,14 +299,21 @@
     if (state.mode === 'turn') state.opts.discardable.forEach(function (id) { allowed[id] = 1; });
     if (state.mode === 'riichi-select') state.opts.riichiTiles.forEach(function (id) { allowed[id] = 1; });
 
-    var rec = null, dangerMap = {};
+    var rec = null, dangerMap = {}, foldMap = {};
     if (cfg.assist && clickable) {
       rec = R.recommendFor(v, state.mode === 'turn' ? state.opts : null);
       var ths2 = D.threats(v);
-      if (ths2.length) {
+      var fold2 = D.foldThreats(v, ths2);
+      // 誰かが聴牌している可能性が十分あるときだけ放銃率を表示する
+      var maxT = 0;
+      ths2.forEach(function (t) { maxT = Math.max(maxT, t.tenpai); });
+      if (maxT >= 0.25) {
         v.hand.forEach(function (id) {
           var t = C.idToType(id);
-          if (dangerMap[t] == null) dangerMap[t] = D.estimate(v, t, ths2);
+          if (dangerMap[t] == null) {
+            dangerMap[t] = D.estimate(v, t, ths2);
+            foldMap[t] = fold2.length ? D.estimate(v, t, fold2).rate : null;
+          }
         });
       }
     }
@@ -305,6 +321,8 @@
     var hand = v.hand.slice();
     var drawn = v.drawn;
     var rest = hand.filter(function (id) { return id !== drawn; });
+    var main = el('div', 'hand-main');
+    var drawnRow = el('div', 'hand-drawn');
     function tileButton(id, isDrawn) {
       var btn = el('button', 'tile-btn');
       var ok = clickable && allowed[id];
@@ -316,10 +334,18 @@
         if (rec && t === rec.tile) {
           slot.appendChild(el('span', 'badge rec', '推奨'));
         } else if (dangerMap[t]) {
-          var dgv = dangerMap[t];
-          if (dgv.rate <= 0.001) slot.appendChild(el('span', 'badge safe', '現物'));
-          else if (dgv.rate >= 0.06) slot.appendChild(el('span', 'badge danger', Math.round(dgv.rate * 100) + '%'));
-          btn.title = dgv.label + ' 推定放銃率' + (dgv.rate * 100).toFixed(1) + '%';
+          var dgv = dangerMap[t], pcv = Math.round(dgv.rate * 100);
+          if (foldMap[t] === 0) slot.appendChild(el('span', 'badge safe', '現物'));
+          else if (dgv.rate < 0.005) slot.appendChild(el('span', 'badge safe', '0%'));
+          else {
+            slot.appendChild(el('span', 'badge ' + (dgv.rate >= 0.10 ? 'danger' : (dgv.rate >= 0.05 ? 'warn' : 'safe')),
+              (pcv < 1 ? '1' : pcv) + '%'));
+          }
+          btn.title = dgv.label + ' 放銃率' + (dgv.rate * 100).toFixed(1) + '%'
+            + dgv.per.map(function (x) {
+              return '\n' + SEAT_LABEL[(x.p - v.me + 4) % 4] + ': ' + (x.rate * 100).toFixed(1)
+                + '% (テンパイ率' + Math.round(x.tenpai * 100) + '%)';
+            }).join('');
         }
       }
       btn.appendChild(tileById(id, {
@@ -334,10 +360,12 @@
       btn.setAttribute('aria-label', tileText(t) + (ok ? ' を切る' : ''));
       return btn;
     }
-    rest.forEach(function (id) { row.appendChild(tileButton(id, false)); });
+    rest.forEach(function (id) { main.appendChild(tileButton(id, false)); });
+    row.appendChild(main);
     if (drawn != null) {
-      row.appendChild(el('div', 'gap'));
-      row.appendChild(tileButton(drawn, true));
+      drawnRow.appendChild(el('span', 'drawn-label', 'ツモ'));
+      drawnRow.appendChild(tileButton(drawn, true));
+      row.appendChild(drawnRow);
     }
     return row;
   }
