@@ -650,9 +650,10 @@ button { font: inherit; color: inherit; }
   border-radius: 2px; border-bottom-width: 1px;
 }
 .sriver {
-  position: absolute; left: 50%; bottom: 16%; transform: translateX(-50%);
+  /* 1段目を中央(卓の内側)に固定し、段が増えるたびに手前へ伸びる = 上から下に捨てていく */
+  position: absolute; left: 50%; top: 66.5%; transform: translateX(-50%);
   width: calc(var(--felt) * 0.047 * 6 + 6px);
-  display: flex; flex-wrap: wrap-reverse; align-content: flex-start; gap: 1px;
+  display: flex; flex-wrap: wrap; align-content: flex-start; gap: 1px;
 }
 .sriver .tile { --tw: calc(var(--felt) * 0.047); border-radius: 2px; }
 .smelds {
