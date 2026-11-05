@@ -9,13 +9,15 @@
 
   var cfg = {
     v: 2, length: 'tonpuu', strength: 'strong', aka: true,
-    assist: true, instant: true, speed: 520
+    assist: true, instant: true, speed: 520,
+    auto: { win: false, nocall: false, tsumogiri: false }
   };
   try {
     var saved = JSON.parse(localStorage.getItem('mj-cfg') || 'null');
     if (saved) {
       Object.assign(cfg, saved);
       if (!saved.v) { cfg.strength = 'strong'; cfg.v = 2; }   // 強いAIを既定に
+      if (!cfg.auto) cfg.auto = { win: false, nocall: false, tsumogiri: false };
     }
   } catch (e) { }
   function saveCfg() { try { localStorage.setItem('mj-cfg', JSON.stringify(cfg)); } catch (e) { } }
@@ -120,13 +122,20 @@
   }
 
   /* ---------- 画面構築 ---------- */
+  function isLandscape() {
+    return window.innerWidth > window.innerHeight * 1.25 && window.innerWidth >= 640;
+  }
+
   function render() {
     if (!state.view) return;
     var v = state.view;
+    var hz;
     app.innerHTML = '';
+    document.documentElement.classList.toggle('mj-landscape', isLandscape());
 
     // --- 情報バー ---
     var bar = el('div', 'topbar');
+    if (isLandscape()) bar.hidden = true;
     bar.appendChild(el('div', 'round', WIND_CH[v.roundWind] + v.kyoku + '局 ' + v.honba + '本場'));
     var dora = el('div', 'dora-box');
     dora.appendChild(el('span', 'chip', 'ドラ'));
@@ -152,7 +161,37 @@
     bar.appendChild(bTh);
     app.appendChild(bar);
 
-    // --- 卓（対面=上 / 上家=左 / 下家=右 / 自分=下） ---
+    // --- 卓 ---
+    if (isLandscape()) {
+      var sc = sceneNode(v);
+      sc.appendChild(hudTop(v));                       // 局・ドラ・ボタンを卓の上に重ねる
+      if (cfg.assist) {
+        var ap = assistNode(v, true);
+        ap.className = 'assist-box assist-panel';
+        sc.appendChild(ap);
+      }
+      if (state.feedback) sc.appendChild(feedbackNode());
+      app.appendChild(sc);
+
+      hz = el('div', 'handzone');
+      var lrow = el('div', 'hand-area');
+      lrow.appendChild(autoBarNode());
+      var hcol = el('div', 'hand-col');
+      if (v.melds.length) {
+        var mm2 = el('div', 'my-melds');
+        mm2.appendChild(meldsNode(v.melds));
+        hcol.appendChild(mm2);
+      }
+      hcol.appendChild(handRow(v));
+      lrow.appendChild(hcol);
+      var ab = actionBar(v);
+      ab.className = 'actionbar action-col';
+      lrow.appendChild(ab);
+      hz.appendChild(lrow);
+      app.appendChild(hz);
+      requestAnimationFrame(fitFelt);
+      return;
+    }
     var table = el('div', 'table');
     var grid = el('div', 'table-grid');
     grid.appendChild(seatCell(v, 2, 'top'));
@@ -165,7 +204,7 @@
     if (cfg.assist) app.appendChild(assistNode(v));
 
     // --- 手牌 ---
-    var hz = el('div', 'handzone');
+    hz = el('div', 'handzone');
     if (v.melds.length) {
       var mm = el('div', 'my-melds');
       mm.appendChild(meldsNode(v.melds));
@@ -187,7 +226,7 @@
     return { type: 13, shanten: u.shanten, ukeire: u.total, tiles: u.tiles };
   }
 
-  function assistNode(v) {
+  function assistNode(v, compact) {
     var box = el('div', 'assist-box');
     var a = analysisNow(v);
     var ph = Th.phaseOf(Math.floor(v.turnCount / 4) + 1);
@@ -204,8 +243,8 @@
           + (best.mode === 'fold' ? '（ベタオリ）' : ' → 受け入れ <b>' + best.ukeire + '</b>枚')
           + (best.rule ? ' <span class="rule-tag">' + best.rule + '</span>' : '');
         box.appendChild(d);
-        if (best.reason) box.appendChild(el('div', 'reason', best.reason));
-        if (best.mode !== 'fold' && best.tiles) {
+        if (best.reason && !compact) box.appendChild(el('div', 'reason', best.reason));
+        if (!compact && best.mode !== 'fold' && best.tiles) {
           box.appendChild(el('div', null, best.tiles.slice(0, 8).map(function (x) {
             return tileText(x.type) + '×' + x.count;
           }).join(' ') + (best.tiles.length > 8 ? ' 他' + (best.tiles.length - 8) + '種' : '')));
@@ -239,7 +278,7 @@
       var gen = D.genbutsuInHand(v, ths);
       box.appendChild(el('div', null, gen.length ? '現物: ' + gen.map(tileText).join('・') : '現物なし'));
     }
-    var allTh = D.threats(v).filter(function (t) { return t.tenpai >= 0.15; });
+    var allTh = compact ? [] : D.threats(v).filter(function (t) { return t.tenpai >= 0.15; });
     if (allTh.length) {
       box.appendChild(el('div', 'lbl', '他家のテンパイ推定'));
       box.appendChild(el('div', null, allTh.map(function (t) {
@@ -300,6 +339,191 @@
     return out.length ? out : null;
   }
 
+
+
+  function feedbackNode() {
+    var f = el('div', 'feedback ' + (state.feedback.cls || '') + (isLandscape() ? ' toast' : ''));
+    f.appendChild(el('span', 'tag', state.feedback.tag));
+    f.appendChild(document.createTextNode(state.feedback.text));
+    if (state.feedback.reason) f.appendChild(el('div', 'reason', state.feedback.reason));
+    return f;
+  }
+
+  // 横画面で卓に重ねる情報バー
+  function hudTop(v) {
+    var h = el('div', 'hud-top');
+    var left = el('div', 'hud-left');
+    left.appendChild(el('span', 'round', WIND_CH[v.roundWind] + v.kyoku + '局 ' + v.honba + '本場'));
+    var dora = el('div', 'dora-box');
+    dora.appendChild(el('span', 'chip', 'ドラ'));
+    v.doraInd.forEach(function (t) { dora.appendChild(tileNode(C.doraFromIndicator(t))); });
+    left.appendChild(dora);
+    if (v.furiten) left.appendChild(el('span', 'chip warn', 'フリテン'));
+    h.appendChild(left);
+    var right = el('div', 'hud-right');
+    [['アシスト', function () { cfg.assist = !cfg.assist; saveCfg(); render(); }, cfg.assist],
+    ['即時指摘', function () { cfg.instant = !cfg.instant; saveCfg(); render(); }, cfg.instant],
+    ['検討', function () { showReport(false); }, null],
+    ['役種', function () { theoryScreen(); }, null]].forEach(function (b) {
+      var btn = el('button', 'icon-btn', b[0]);
+      if (b[2] != null) btn.setAttribute('aria-pressed', b[2] ? 'true' : 'false');
+      btn.onclick = b[1];
+      right.appendChild(btn);
+    });
+    h.appendChild(right);
+    return h;
+  }
+
+
+  // 卓の大きさは実測して画面に収める（パースの射影高さはCSSだけでは決まらない）
+  function fitFelt() {
+    var sc = app.querySelector('.scene');
+    if (!sc) return;
+    var f = sc.querySelector('.felt');
+    if (!f) return;
+    var sh = sc.clientHeight, sw = sc.clientWidth;
+    if (!sh || !sw) return;
+    // 射影後の大きさと位置を実測しながら、画面にちょうど収まるよう収束させる
+    var size = Math.min(sh, sw) * 0.8, top = 0;
+    for (var i = 0; i < 6; i++) {
+      f.style.setProperty('--felt', size + 'px');
+      f.style.top = top + 'px';
+      var r = f.getBoundingClientRect(), a = sc.getBoundingClientRect();
+      if (!r.height || !r.width) break;
+      top += ((a.top + a.bottom) - (r.top + r.bottom)) / 2;   // 射影のずれを打ち消して中央に置く
+      f.style.top = top + 'px';
+      r = f.getBoundingClientRect();
+      var k = Math.min((sh - 8) / r.height, (sw - 10) / r.width);
+      if (Math.abs(k - 1) < 0.015) break;
+      size = Math.max(140, Math.min(size * k, size * 1.7));
+    }
+  }
+
+  /* ================= 雀卓ビュー（横画面・パース表示） ================= */
+  var SEAT_ROT = [0, -90, 180, 90];      // 自分 / 下家 / 対面 / 上家
+
+  function wallNode(n) {
+    var w = el('div', 'wall');
+    for (var i = 0; i < n; i++) w.appendChild(tileNode(null));
+    return w;
+  }
+
+  function sceneRiver(pd, mark) {
+    var w = el('div', 'sriver');
+    pd.discards.forEach(function (d, i) {
+      var cls = (d.tsumogiri ? 'tsumogiri ' : '') + (d.called ? 'dim ' : '') + (d.riichi ? 'sideways ' : '');
+      if (mark && i === pd.discards.length - 1) cls += 'callable ' + mark;
+      w.appendChild(tileById(d.id, { cls: cls }));
+    });
+    return w;
+  }
+
+  function centerPlate(v) {
+    var c = el('div', 'plate');
+    var main = el('div', 'plate-main');
+    main.appendChild(el('div', 'plate-round', WIND_CH[v.roundWind] + KYOKU_CH[v.kyoku - 1] + '局'));
+    main.appendChild(el('div', 'plate-wall', '全' + v.wallLeft));
+    var sticks = el('div', 'plate-sticks');
+    sticks.appendChild(el('span', 'st honba', '×' + v.honba));
+    sticks.appendChild(el('span', 'st kyotaku', '×' + v.kyotaku));
+    main.appendChild(sticks);
+    c.appendChild(main);
+    for (var k = 0; k < 4; k++) {
+      var p = (v.me + k) % 4;
+      var s = el('div', 'plate-score ps' + k + (p === v.oya ? ' oya' : ''));
+      s.appendChild(el('span', 'pw', WIND_CH[v.players[p].seatWind]));
+      s.appendChild(el('span', 'pv', v.players[p].score.toLocaleString()));
+      c.appendChild(s);
+    }
+    return c;
+  }
+
+  function avatarNode(v, k) {
+    var p = (v.me + k) % 4, pd = v.players[p];
+    var a = el('div', 'avatar av' + k + (pd.riichi ? ' is-riichi' : ''));
+    var ic = el('div', 'av-icon');
+    ic.appendChild(el('span', null, WIND_CH[pd.seatWind]));
+    a.appendChild(ic);
+    var info = el('div', 'av-info');
+    var row = el('div', 'av-name');
+    row.appendChild(el('span', null, k === 0 ? '自分' : SEAT_LABEL[k]));
+    if (p === v.oya) row.appendChild(el('span', 'oya-mark', '親'));
+    if (pd.riichi) row.appendChild(el('span', 'riichi-badge', 'リーチ'));
+    if (pd.melds && pd.melds.length) row.appendChild(el('span', 'meld-badge', '鳴き' + pd.melds.length));
+    info.appendChild(row);
+    info.appendChild(el('div', 'av-score', pd.score.toLocaleString()));
+    a.appendChild(info);
+    return a;
+  }
+
+  function sceneNode(v) {
+    var scene = el('div', 'scene');
+    var felt = el('div', 'felt');
+    for (var k = 0; k < 4; k++) {
+      var p = (v.me + k) % 4, pd = v.players[p];
+      var sp = el('div', 'seat-plane');
+      sp.style.transform = 'rotate(' + SEAT_ROT[k] + 'deg)';
+      sp.appendChild(wallNode(17));
+      var mark = null;
+      if (state.mode === 'call' && state.callOpts && state.callOpts.from === p) {
+        mark = state.callOpts.canRon ? 'ron' : 'call';
+      }
+      sp.appendChild(sceneRiver(pd, mark));
+      if (pd.melds && pd.melds.length) {
+        var m = meldsNode(pd.melds);
+        m.className = 'melds smelds';
+        sp.appendChild(m);
+      }
+      felt.appendChild(sp);
+    }
+    felt.appendChild(centerPlate(v));
+    scene.appendChild(felt);
+    var avs = el('div', 'avatars');
+    for (var j = 0; j < 4; j++) avs.appendChild(avatarNode(v, j));
+    scene.appendChild(avs);
+    return scene;
+  }
+
+  /* 左側の自動化トグル（理=自動整理 / 和=自動和了 / 鳴=鳴かない / 切=ツモ切り） */
+  function autoBarNode() {
+    var bar = el('div', 'auto-bar');
+    [['sort', '理', '自動整理（常にオン）', true],
+    ['win', '和', '自動和了', false],
+    ['nocall', '鳴', '鳴かない', false],
+    ['tsumogiri', '切', 'ツモ切り', false]].forEach(function (a) {
+      var b = el('button', 'auto-btn' + (a[3] ? ' fixed' : ''), a[1]);
+      var on = a[3] ? true : !!cfg.auto[a[0]];
+      b.setAttribute('aria-pressed', on ? 'true' : 'false');
+      b.title = a[2];
+      if (!a[3]) {
+        b.onclick = function () {
+          cfg.auto[a[0]] = !cfg.auto[a[0]];
+          saveCfg();
+          render();
+          if (cfg.auto[a[0]]) tryAuto();
+        };
+      }
+      bar.appendChild(b);
+    });
+    return bar;
+  }
+
+  // 自動化トグルに従って手番を自動処理する
+  function tryAuto() {
+    if (state.mode === 'turn' && state.opts) {
+      if (cfg.auto.win && state.opts.canTsumo) { finishTurn({ type: 'tsumo' }); return true; }
+      if (cfg.auto.tsumogiri && state.view && state.view.drawn != null
+        && state.opts.discardable.indexOf(state.view.drawn) >= 0) {
+        finishTurn({ type: 'discard', tile: state.view.drawn }); return true;
+      }
+    }
+    if (state.mode === 'call' && state.callOpts) {
+      if (cfg.auto.win && state.callOpts.canRon) { finishCall({ type: 'ron' }); return true; }
+      if (cfg.auto.nocall && !state.callOpts.canRon) { finishCall({ type: 'pass' }); return true; }
+    }
+    return false;
+  }
+
   function handRow(v) {
     var row = el('div', 'hand-row');
     var clickable = (state.mode === 'turn' || state.mode === 'riichi-select');
@@ -315,7 +539,7 @@
       (co0.chi || []).forEach(function (ch) { (ch.tiles || []).forEach(function (id) { usable[id] = 1; }); });
     }
 
-    var rec = null, dangerMap = {}, foldMap = {};
+    var rec = null, dangerMap = {}, foldMap = {}, recShown = false;
     if (cfg.assist && clickable) {
       rec = R.recommendFor(v, state.mode === 'turn' ? state.opts : null);
       var ths2 = D.threats(v);
@@ -347,7 +571,8 @@
       var slot = el('div', 'badge-slot');   // 牌の上に重ならないよう専用の行を確保
       btn.appendChild(slot);
       if (cfg.assist && clickable && allowed[id]) {
-        if (rec && t === rec.tile) {
+        if (rec && t === rec.tile && !recShown) {
+          recShown = true;
           slot.appendChild(el('span', 'badge rec', '推奨'));
         } else if (dangerMap[t]) {
           var dgv = dangerMap[t], pcv = Math.round(dgv.rate * 100);
@@ -440,14 +665,7 @@
     } else {
       bar.appendChild(el('span', 'hint', state.running ? '他家の手番…' : ''));
     }
-    if (state.feedback) {
-      var f = el('div', 'feedback ' + (state.feedback.cls || ''));
-      var tag = el('span', 'tag', state.feedback.tag);
-      f.appendChild(tag);
-      f.appendChild(document.createTextNode(state.feedback.text));
-      if (state.feedback.reason) f.appendChild(el('div', 'reason', state.feedback.reason));
-      bar.appendChild(f);
-    }
+    if (state.feedback && !isLandscape()) bar.appendChild(feedbackNode());
     return bar;
   }
 
@@ -514,13 +732,19 @@
             }, Math.max(260, cfg.speed * 0.5));
           });
         }
-        return new Promise(function (res) { state.resolve = res; render(); });
+        return new Promise(function (res) {
+          state.resolve = res; render();
+          setTimeout(function () { if (state.resolve === res) tryAuto(); }, 20);
+        });
       },
       callAction: function (v, o) {
         state.view = v;
         if (!o.canRon && !o.canPon && !o.canKan && !o.chi.length) return { type: 'pass' };
         state.callOpts = o; state.mode = 'call';
-        return new Promise(function (res) { state.resolve = res; render(); });
+        return new Promise(function (res) {
+          state.resolve = res; render();
+          setTimeout(function () { if (state.resolve === res) tryAuto(); }, 20);
+        });
       }
     };
   }
@@ -1079,6 +1303,12 @@
         + 'オーラスの着順意識まで見て打ちます。'));
     });
   }
+
+  var rsTimer = null;
+  window.addEventListener('resize', function () {
+    clearTimeout(rsTimer);
+    rsTimer = setTimeout(function () { if (state.view) render(); }, 150);
+  });
 
   startScreen();
 })();

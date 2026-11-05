@@ -575,3 +575,174 @@ button { font: inherit; color: inherit; }
 .mistake .pri.p1 { color: var(--riichi); border-color: color-mix(in srgb, var(--riichi) 45%, var(--line)); }
 .mistake .pri.p2 { color: var(--warn); border-color: color-mix(in srgb, var(--warn) 45%, var(--line)); }
 .advice li b { color: var(--ink); }
+
+/* ================= 雀卓ビュー（横画面・パース表示） ================= */
+:root.mj-landscape #app {
+  max-width: none; padding-block: 0; gap: 3px; height: 100%; min-height: 0; overflow: hidden;
+  padding-left: max(3px, env(safe-area-inset-left, 0px));
+  padding-right: max(3px, env(safe-area-inset-right, 0px));
+}
+:root.mj-landscape .topbar { display: none; }
+
+/* 卓に重ねる情報 */
+.hud-top {
+  position: absolute; top: 5px; left: 7px; right: 7px; z-index: 3;
+  display: flex; align-items: flex-start; justify-content: space-between; gap: 8px;
+  pointer-events: none;
+}
+.hud-top .hud-left, .hud-top .hud-right { display: flex; align-items: center; gap: 5px; pointer-events: auto; }
+.hud-top .round { font-family: var(--font-display); font-size: 14px; }
+.hud-top .dora-box .tile { --tw: 19px; }
+.hud-top .icon-btn { font-size: 11px; padding: 3px 7px; }
+.hud-left, .hud-right {
+  background: color-mix(in srgb, var(--surface) 80%, transparent);
+  border: 1px solid var(--line); border-radius: 999px; padding: 3px 9px;
+}
+.assist-panel {
+  position: absolute; left: 7px; top: 36px; z-index: 3; width: min(230px, 29%);
+  background: color-mix(in srgb, var(--surface) 90%, transparent);
+  max-height: 38%; overflow-y: auto; font-size: 10.5px; padding: 4px 8px; line-height: 1.4;
+}
+.assist-panel .lbl { font-size: 9px; }
+.feedback.toast {
+  position: absolute; right: 7px; bottom: 6px; z-index: 4;
+  width: min(420px, 46%); max-height: 30%; font-size: 11px; line-height: 1.45;
+  padding: 5px 8px; box-shadow: var(--shadow);
+  background: color-mix(in srgb, var(--surface) 93%, transparent);
+}
+.feedback.toast .reason {
+  font-size: 10.5px; margin-top: 2px;
+  display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden;
+}
+
+.scene {
+  position: relative; flex: 1 1 auto; min-height: 0;
+  display: grid; place-items: center;
+  perspective: 1500px; perspective-origin: 50% 50%;
+  --felt: min(calc((100vh - 128px) / 0.74), 60vw);   /* 初期値。実際は fitFelt() が実測で上書きする */
+  background:
+    radial-gradient(ellipse at 50% 42%, #1c3a5e 0%, #15294180 60%, transparent 70%),
+    var(--bg-2);
+  border: 1px solid var(--line); border-radius: 12px; overflow: hidden;
+}
+.felt {
+  position: relative; width: var(--felt); height: var(--felt);
+  transform: rotateX(54deg); transform-style: preserve-3d;
+  background:
+    radial-gradient(ellipse at 50% 50%, #27568c 0%, #1c3f6b 55%, #15314f 100%);
+  border: calc(var(--felt) * 0.028) solid #6b5433;
+  border-radius: 4px;
+  box-shadow: 0 0 0 2px #3c2f1c, 0 24px 60px rgba(0, 0, 0, .55),
+    inset 0 0 calc(var(--felt) * 0.1) rgba(0, 0, 0, .35);
+}
+.felt::after {                                  /* 卓面の内枠（雀卓の線） */
+  content: ""; position: absolute; inset: 14%; border: 1px solid rgba(255, 255, 255, .09);
+  border-radius: 2px;
+}
+.seat-plane { position: absolute; inset: 0; transform-origin: 50% 50%; }
+
+.wall {
+  position: absolute; left: 50%; bottom: 1.5%; transform: translateX(-50%);
+  display: flex; gap: 1px;
+}
+.wall .tile {
+  --tw: calc(var(--felt) * 0.044);
+  border-radius: 2px; border-bottom-width: 1px;
+}
+.sriver {
+  position: absolute; left: 50%; bottom: 16%; transform: translateX(-50%);
+  width: calc(var(--felt) * 0.047 * 6 + 6px);
+  display: flex; flex-wrap: wrap-reverse; align-content: flex-start; gap: 1px;
+}
+.sriver .tile { --tw: calc(var(--felt) * 0.047); border-radius: 2px; }
+.smelds {
+  position: absolute; right: 3%; bottom: 7%;
+  padding: 2px 3px; gap: 4px; max-width: 46%;
+}
+.smelds .tile { --tw: calc(var(--felt) * 0.04); }
+
+.plate {
+  position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%);
+  width: 31%; height: 31%; border-radius: 6px;
+  background: linear-gradient(#10243c, #0a1a2c);
+  border: 2px solid #c9a24a; box-shadow: 0 0 0 1px #000a, inset 0 0 12px #0008;
+  color: #f0e6cf; font-family: var(--font-display);
+  display: grid; place-items: center;
+}
+.plate-main {
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  gap: 1px; line-height: 1.15;
+}
+.plate-round { font-size: calc(var(--felt) * 0.044); }
+.plate-wall { font-size: calc(var(--felt) * 0.03); color: #cfd8e6; }
+.plate-sticks {
+  display: flex; gap: 6px; margin-top: 2px;
+  font-size: calc(var(--felt) * 0.022); font-family: var(--font-body);
+}
+.plate-sticks .st::before {
+  content: ""; display: inline-block; width: 12px; height: 4px; border-radius: 2px;
+  background: #efe7d2; margin-right: 2px; vertical-align: middle;
+}
+.plate-sticks .st.kyotaku::before { background: linear-gradient(90deg, #efe7d2 40%, #d84a3f 40% 60%, #efe7d2 60%); }
+.plate-score {
+  position: absolute; font-family: var(--font-body); font-variant-numeric: tabular-nums;
+  font-size: calc(var(--felt) * 0.026); color: #e8eef7; white-space: nowrap;
+}
+.plate-score .pw { color: #c9a24a; margin-right: 3px; }
+.plate-score.oya .pw { color: #f0c469; }
+.plate-score.ps0 { left: 50%; bottom: 4%; transform: translateX(-50%); }
+.plate-score.ps1 { right: 4%; top: 50%; transform: translateY(-50%) rotate(-90deg); transform-origin: right center; }
+.plate-score.ps2 { left: 50%; top: 4%; transform: translateX(-50%) rotate(180deg); }
+.plate-score.ps3 { left: 4%; top: 50%; transform: translateY(-50%) rotate(90deg); transform-origin: left center; }
+
+/* アバター（卓の外側・パースをかけない） */
+.avatars { position: absolute; inset: 0; pointer-events: none; }
+.avatar {
+  position: absolute; display: flex; align-items: center; gap: 6px; z-index: 2;
+  background: color-mix(in srgb, var(--surface) 86%, transparent);
+  border: 1px solid var(--line); border-radius: 999px; padding: 3px 10px 3px 3px;
+  font-size: 11.5px; box-shadow: var(--shadow); white-space: nowrap;
+}
+.avatar.is-riichi { border-color: var(--riichi); }
+.av-icon {
+  width: 26px; height: 26px; border-radius: 50%; flex: 0 0 auto;
+  background: linear-gradient(145deg, var(--accent), var(--accent-soft));
+  color: #fff; display: grid; place-items: center;
+  font-family: var(--font-display); font-size: 14px;
+}
+.av-name { display: flex; align-items: center; gap: 4px; font-weight: 600; }
+.av-score { font-variant-numeric: tabular-nums; color: var(--ink-2); font-size: 11px; }
+.avatar.av0 { left: 7px; bottom: 6px; }
+.avatar.av1 { right: 7px; top: 62%; }
+.avatar.av2 { left: 50%; top: 4px; transform: translateX(-50%); }
+.avatar.av3 { left: 7px; top: 62%; }
+
+/* 左側の自動化トグル */
+.hand-area { display: flex; align-items: flex-end; gap: 8px; }
+.hand-col { flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; gap: 5px; }
+.auto-bar { display: flex; flex-direction: column; gap: 3px; flex: 0 0 auto; }
+.auto-btn {
+  width: 30px; height: 26px; border-radius: 6px; cursor: pointer;
+  background: var(--surface-2); border: 1px solid var(--line);
+  font-family: var(--font-display); font-size: 14px; line-height: 1;
+}
+.auto-btn[aria-pressed="true"] { background: var(--accent); color: #fff; border-color: var(--accent); }
+.auto-btn.fixed { opacity: .65; cursor: default; }
+
+:root.mj-landscape .hand-row .tile { --tw: min(54px, calc((100vw - 190px) / 14)); }
+:root.mj-landscape .hand-row { gap: 2px 8px; flex-wrap: nowrap; }
+:root.mj-landscape .hand-main { gap: 2px; }
+.action-col {
+  flex: 0 0 auto; display: flex; flex-direction: column; align-items: stretch;
+  gap: 3px; min-height: 0; max-width: 150px;
+}
+.action-col .btn { padding: 5px 10px; font-size: 12.5px; }
+.action-col .hint { font-size: 10.5px; }
+.action-col .call-banner { font-size: 11px; padding: 3px 7px; }
+.action-col .call-banner .tile { --tw: 20px; }
+.action-col .call-btn .tile.mini { --tw: 16px; }
+:root.mj-landscape .handzone { padding: 4px 6px; flex: 0 0 auto; }
+:root.mj-landscape .scene { flex: 1 1 0; }
+:root.mj-landscape .assist-box { font-size: 11px; padding: 4px 8px; gap: 1px 12px; }
+:root.mj-landscape .assist-box .reason { font-size: 10.5px; }
+:root.mj-landscape .feedback { max-height: 20vh; }
