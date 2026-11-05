@@ -50,10 +50,11 @@
   function tileText(t) { return C.typeLabel(t); }
 
   /* ---------- 河 / 副露 ---------- */
-  function riverNode(discards) {
+  function riverNode(discards, markLast) {
     var w = el('div', 'river');
-    discards.forEach(function (d) {
-      var cls = (d.tsumogiri ? 'tsumogiri ' : '') + (d.called ? 'dim ' : '') + (d.riichi ? 'sideways' : '');
+    discards.forEach(function (d, i) {
+      var cls = (d.tsumogiri ? 'tsumogiri ' : '') + (d.called ? 'dim ' : '') + (d.riichi ? 'sideways ' : '');
+      if (markLast && i === discards.length - 1) cls += 'callable ' + markLast;
       w.appendChild(tileById(d.id, { cls: cls }));
     });
     return w;
@@ -87,7 +88,11 @@
     var box = el('div', 'river-box' + (isSide ? ' side' : ''));
     if (isSide) box.style.setProperty('--cols', Math.max(2, Math.ceil(pd.discards.length / 6)));
     else box.style.setProperty('--rows', Math.max(3, Math.ceil(pd.discards.length / 6)));
-    box.appendChild(riverNode(pd.discards));
+    var mark = null;
+    if (state.mode === 'call' && state.callOpts && state.callOpts.from === p) {
+      mark = state.callOpts.canRon ? 'ron' : 'call';
+    }
+    box.appendChild(riverNode(pd.discards, mark));
     inner.appendChild(box);
 
     if (k !== 0) cell.appendChild(backsNode(pd.handSize, pos === 'left' || pos === 'right'));
@@ -301,6 +306,14 @@
     var allowed = {};
     if (state.mode === 'turn') state.opts.discardable.forEach(function (id) { allowed[id] = 1; });
     if (state.mode === 'riichi-select') state.opts.riichiTiles.forEach(function (id) { allowed[id] = 1; });
+    // 鳴きに使える手牌をマークする
+    var usable = {};
+    if (state.mode === 'call' && state.callOpts) {
+      var co0 = state.callOpts;
+      (co0.ponTiles || []).forEach(function (id) { usable[id] = 1; });
+      (co0.kanTiles || []).forEach(function (id) { usable[id] = 1; });
+      (co0.chi || []).forEach(function (ch) { (ch.tiles || []).forEach(function (id) { usable[id] = 1; }); });
+    }
 
     var rec = null, dangerMap = {}, foldMap = {};
     if (cfg.assist && clickable) {
@@ -352,7 +365,7 @@
         }
       }
       btn.appendChild(tileById(id, {
-        cls: (clickable && !allowed[id] ? 'dim' : '') + (isDrawn ? ' just' : '')
+        cls: (clickable && !allowed[id] ? 'dim' : '') + (isDrawn ? ' just' : '') + (usable[id] ? ' usable' : '')
       }));
       if (ok) {
         btn.onclick = function () {
@@ -399,13 +412,29 @@
     } else if (state.mode === 'riichi-select') {
       add('やめる', 'ghost', function () { state.mode = 'turn'; state.feedback = null; render(); });
     } else if (state.mode === 'call' && co) {
-      if (co.canRon) add('ロン', 'primary', function () { finishCall({ type: 'ron' }); });
-      if (co.canPon) add('ポン', '', function () { finishCall({ type: 'pon', tiles: co.ponTiles }); });
-      if (co.canKan) add('カン', '', function () { finishCall({ type: 'kan', tiles: co.kanTiles }); });
+      // どの牌で鳴けるのかを牌の絵つきで示す
+      var banner = el('div', 'call-banner' + (co.canRon ? ' ron' : ''));
+      banner.appendChild(el('span', 'cb-who', SEAT_LABEL[(co.from - v.me + 4) % 4] + 'の'));
+      banner.appendChild(tileNode(co.tile, { cls: 'callable ' + (co.canRon ? 'ron' : 'call') }));
+      banner.appendChild(el('span', 'cb-txt', 'で' + (co.canRon ? '和了できます' : '鳴けます')));
+      bar.appendChild(banner);
+
+      function addCall(label, cls, tiles, fn) {
+        var b = el('button', 'btn call-btn ' + (cls || ''));
+        b.appendChild(el('span', 'cb-label', label));
+        var g = el('span', 'cb-tiles');
+        (tiles || []).forEach(function (id) { g.appendChild(tileById(id, { cls: 'mini' })); });
+        g.appendChild(tileNode(co.tile, { cls: 'mini called' }));
+        b.appendChild(g);
+        b.onclick = fn;
+        bar.appendChild(b);
+        return b;
+      }
+      if (co.canRon) addCall('ロン', 'primary', [], function () { finishCall({ type: 'ron' }); });
+      if (co.canPon) addCall('ポン', '', co.ponTiles, function () { finishCall({ type: 'pon', tiles: co.ponTiles }); });
+      if (co.canKan) addCall('カン', '', co.kanTiles, function () { finishCall({ type: 'kan', tiles: co.kanTiles }); });
       co.chi.forEach(function (ch) {
-        add('チー ' + ch.types.map(tileText).join('+'), '', function () {
-          finishCall({ type: 'chi', tiles: ch.tiles });
-        });
+        addCall('チー', '', ch.tiles, function () { finishCall({ type: 'chi', tiles: ch.tiles }); });
       });
       add('パス', 'ghost', function () { finishCall({ type: 'pass' }); });
     } else {
