@@ -1,0 +1,26 @@
+# このファイルを settings.toml にコピーして、自分の環境に合わせて書き換えてください。
+# 相対パスはこのプロジェクトのディレクトリが基準になります。
+
+# mjai-reviewer の実行ファイル（PATH に入っていれば "mjai-reviewer" のままでよい）
+reviewer_bin = "../mjai-reviewer/target/release/mjai-reviewer"
+
+# 既定で使うエンジン: "akochan"（モデル不要）か "mortal"（学習済みモデルが必要）
+engine = "akochan"
+
+# --- akochan を使う場合 ---
+# system.exe と libai.so / libai.dylib が置かれているディレクトリ
+akochan_dir = "../akochan"
+# 戦術設定ファイル（mjai-reviewer 同梱の tactics.json でよい）
+akochan_tactics = "../mjai-reviewer/tactics.json"
+# この差（pt期待値）以内なら akochan は「許容範囲」と判定する
+deviation_threshold = 0.05
+
+# --- Mortal を使う場合（学習済みモデル mortal.pth が手元にある人だけ） ---
+mortal_exe = "../Mortal/mortal/mortal"
+mortal_cfg = "../Mortal/mortal/config.toml"
+# 表示用 softmax 温度。小さいほど最善手の確率が高く出る
+temperature = 0.1
+
+# --- 置き場所 ---
+logs_dir = "logs"    # 雀魂から落とした牌譜 JSON を置くディレクトリ
+cache_dir = "cache"  # 解析結果のキャッシュ（消しても再解析すれば戻る）

@@ -1,0 +1,9 @@
+# 自分の環境向け設定（settings.example.toml をコピーして作る）
+settings.toml
+# 解析結果のキャッシュと牌譜置き場
+cache/
+logs/*.json
+!logs/.gitkeep
+__pycache__/
+*.pyc
+.venv/
